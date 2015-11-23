@@ -122,48 +122,54 @@ def timeThread(self,data):
 def processMsg(self):
     #logging.info('Msg: %s' % str(self.data))
     #json loads the data
-    msg = json.loads(self.data)
-    dic = json.loads(msg.pop())
-    if 'origin' in dic:
-        #prm data update
-        self.parent.myBeam = beamData()
-        self.parent.myBeam.updateValsFromDict(dic)
-        self.parent.myBeam.prm.updateValsFromDict(dic)
+    #import pdb 
+    #pdb.set_trace()
 
-        if self.parent.myBeam.prm.rsep != self.parent.site.rsep:
-            logging.info('Difference in rsep: %s' % str(self.parent.site.rsep),' : ',str(self.parent.myBeam.prm.rsep))
-            self.parent.site.rsep = self.parent.myBeam.prm.rsep
-            createData(self)
-        self.endP = False
-    elif 'rng' in dic:
-        #fit data update and param noisesky
-        self.parent.myBeam.fit.updateValsFromDict(dic)
-        self.parent.myBeam.prm.noisesky = dic['noise']['skynoise']
-        self.parent.timeNow = datetime.datetime.today()
+    dic = json.loads(self.data)
+    
+    #prm data update
+    self.parent.myBeam = beamData()
+    self.parent.myBeam.updateValsFromDict(dic)
+    self.parent.myBeam.prm.updateValsFromDict(dic)
+    '''
+    if self.parent.myBeam.prm.rsep != self.parent.site.rsep:
+        logging.info('Difference in rsep: %s' % str(self.parent.site.rsep),' : ',str(self.parent.myBeam.prm.rsep))
+        self.parent.site.rsep = self.parent.myBeam.prm.rsep
+        createData(self)
+    '''
+    self.endP = False
+
+    #fit data update and param noisesky
+    self.parent.myBeam.fit.updateValsFromDict(dic)
+    self.parent.myBeam.prm.noisesky = dic['noise.sky']
+    self.parent.timeNow = datetime.datetime.today()
 
 
-        #updates time to a datetime string
-        time = self.parent.myBeam.time
-        self.parent.myBeam.time = datetime.datetime(time['yr'],time['mo'],\
-                time['dy'],time['hr'],time['mt'],time['sc'])
-        logging.info("Proccessing Beam: %s Time: %s" % (str(self.parent.myBeam.bmnum),str(self.parent.myBeam.time)))
-        #inserts removes and inserts new beam data
-        self.gque.put(self.parent.myBeam)
-        if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
-            self.tque.put(self.parent.myBeam)
-        logging.info("Proccessing packet: %s" % (str(self.parent.i)))
-        self.parent.i = self.parent.i+1
-        self.endP = True
+    #updates time to a datetime string
+    #time = self.parent.myBeam.time
+    #self.parent.myBeam.time = datetime.datetime(time['yr'],time['mo'],\
+    #time['dy'],time['hr'],time['mt'],time['sc'])
+    self.parent.myBeam.time = datetime.datetime.now() # TODO: uh.. 
 
-        #adds beam data to the Beam list only the specified beam number
-        #for the time plot which only plots a single beam
-        if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
-            self.parent.myBeamList.append(self.parent.myBeam)
+    logging.info("Proccessing Beam: %s Time: %s" % (str(self.parent.myBeam.bmnum),str(self.parent.myBeam.time)))
+    #inserts removes and inserts new beam data
+    self.gque.put(self.parent.myBeam)
+    if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
+        self.tque.put(self.parent.myBeam)
+    logging.info("Proccessing packet: %s" % (str(self.parent.i)))
+    self.parent.i = self.parent.i+1
+    self.endP = True
+
+    #adds beam data to the Beam list only the specified beam number
+    #for the time plot which only plots a single beam
+    if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
+        self.parent.myBeamList.append(self.parent.myBeam)
 
 def incommingData(self,data):						
     #As soon as any data is received, write it back.
     #print 'Self.data: ',self.data
     #logging.info('Start self.Data: %s' % str(self.data))
+
     self.find = str.find
     start_count = self.data.count('["{')
     if start_count != 0:
@@ -171,6 +177,17 @@ def incommingData(self,data):
     logging.info('Start Count: %s' % str(start_count))
     i = 0
     logging.info('Data: %s' % str(data))
+    self.data = data
+
+    processMsg(self)
+    '''
+    try:
+        processMsg(self)
+    except:
+        logging.info('Incomming Data %s' % str(sys.exc_info()[0]))
+        logging.info('Data %s' % str(self.data))
+        self.errorCount = self.errorCount + 1
+        logging.error('Error in Data: '+str(self.errorCount))
     while i <= start_count:
         #logging.info('Looping self.Data: %s' % str(self.data))
         indS = self.find(self.data,'["{')
@@ -248,6 +265,7 @@ def incommingData(self,data):
             self.data = self.data2
             self.data2 = None
         i +=1
+    '''
 
 class EchoClient(protocol.Protocol):
     def connectionMade(self):
@@ -322,6 +340,7 @@ def serverCon(self):
     f.gque = Queue()
     f.gque.put(self.myScan)
     f.tque = Queue()
+    #reactor.addSystemEventTrigger("before", "shutdown", disconnect)
     gt = reactor.callInThread(geoThread, self,f.gque)
     tt = reactor.callInThread(timeThread, self,f.tque)
     reactor.connectTCP(self.hosts[0], int(self.ports[0]), f)
