@@ -1,4 +1,4 @@
-from pydarn.sdio import beamData, scanData
+﻿from pydarn.sdio import beamData, scanData
 import logging
 from twisted.internet import reactor, protocol, threads
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -25,72 +25,76 @@ clears figure, calls graphing method, saves figure
 
 '''
 def geoThread(self,data):
-    while not data.empty():
-        myScan = data.get()
-        for mb in myScan:
-            myBeam = beamData()
-            myBeam = mb
-            break
-    while True:
-        while not data.empty():
-            myBeam = beamData()
-            myBeam = data.get()
-            myScan.pop(myBeam.bmnum)
-            myScan.insert(myBeam.bmnum,myBeam)
-        try:
-            self.geo['figure'] = plotFan(myScan,[self.rad],
-                    fovs = self.fovs,
-                    params=self.geo['param'],
-                    gsct=self.geo['gsct'], 
-                    maxbeams = int(self.maxbeam[0]),
-                    maxgates=int(self.nrangs[0]),	
-                    scales=self.geo['sc'],
-                    drawEdge = self.geo['drawEdge'], 
-                    myFigs = self.geo['figure'],
-                    bmnum = myBeam.bmnum,
-                    site = self.site,
-                    tfreq = myBeam.prm.tfreq,
-                    noise = myBeam.prm.noisesearch,
-                    rTime=myBeam.time,
-                    title = self.names[0],
-                    dist = self.dist,
-                    llcrnrlon = self.llcrnrlon,
-                    llcrnrlat = self.llcrnrlat,
-                    urcrnrlon = self.urcrnrlon,
-                    urcrnrlat = self.urcrnrlat,
-                    lon_0 = self.lon_0,
-                    lat_0 = self.lat_0,
-                    merGrid = self.geo['merGrid'],
-                    merColor = self.geo['merColor'],
-                    continentBorder = self.geo['continentBorder'],
-                    waterColor = self.geo['waterColor'],
-                    continentColor = self.geo['continentColor'],
-                    backgColor = self.geo['backgColor'],
-                    gridColor = self.geo['gridColor'],
-                    filepath = self.filepath[0])
-        except:
-            self.no_err = False
-            logging.error('geographic plot missing info')
-            logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
-    logging.info('Updated Geographic Plot')
-    for i in range(len(self.parent.fan['figure'])):
-        try:
-            self.fan['figure'][i].clf()
-            self.fan['figure'][i]=plotFgpJson(myScan,self.rad,
-                    params=[self.fan['param'][i]],
-                    gsct=self.fan['gsct'],
-                    scales=[self.fan['sc'][i]],
-                    bmnum = myBeam.bmnum,
-                    figure = self.fan['figure'][i],
-                    tfreq = myBeam.prm.tfreq,
-                    noise = myBeam.prm.noisesearch,
-                    rTime=myBeam.time,
-                    title = self.names[0])
-            self.fan['figure'][i].savefig("%sfan_%s" % (self.filepath[0],self.fan['param'][i]))
-        except:
-            logging.error('fan plot missing info')
-            logging.error('Fan Figure: %s'%(sys.exc_info()[0]))
-        logging.info('Updated Fan Plot')
+	while not data.empty():
+		myScan = data.get()
+		#print 'myScan=',myScan
+		for mb in myScan:
+			myBeam = beamData()
+			myBeam = mb
+			break
+	while True:
+		print 'Geo'
+		while not data.empty():
+			myBeam = beamData()
+			myBeam = data.get()
+			#print 'myBeam=',myBeam
+			myScan.pop(myBeam.bmnum)
+			myScan.insert(myBeam.bmnum,myBeam)
+		
+	
+		try:
+			self.geo['figure'] = plotFan(myScan,[self.rad],
+				fovs = self.fovs,
+				params=self.geo['param'],
+				gsct=self.geo['gsct'], 
+				maxbeams = int(self.maxbeam[0]),
+				maxgates=int(self.nrangs[0]),	
+				scales=self.geo['sc'],
+				drawEdge = self.geo['drawEdge'], 
+				myFigs = self.geo['figure'],
+				bmnum = myBeam.bmnum,
+				site = self.site,
+				tfreq = myBeam.prm.tfreq,
+				noise = myBeam.prm.noisesearch,
+				rTime=myBeam.time,
+				title = self.names[0],
+				dist = self.dist,
+				llcrnrlon = self.llcrnrlon,
+				llcrnrlat = self.llcrnrlat,
+				urcrnrlon = self.urcrnrlon,
+				urcrnrlat = self.urcrnrlat,
+				lon_0 = self.lon_0,
+				lat_0 = self.lat_0,
+				merGrid = self.geo['merGrid'],
+				merColor = self.geo['merColor'],
+				continentBorder = self.geo['continentBorder'],
+				waterColor = self.geo['waterColor'],
+				continentColor = self.geo['continentColor'],
+				backgColor = self.geo['backgColor'],
+				gridColor = self.geo['gridColor'],
+				filepath = self.filepath[0])
+		except:
+			logging.error('geographic plot missing info')
+			logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
+		logging.info('Updated Geographic Plot')
+		for i in range(len(self.fan['figure'])):
+			try:
+				self.fan['figure'][i].clf()
+				self.fan['figure'][i]=plotFgpJson(myScan,self.rad,
+					params=[self.fan['param'][i]],
+					gsct=self.fan['gsct'],
+					scales=[self.fan['sc'][i]],
+					bmnum = myBeam.bmnum,
+					figure = self.fan['figure'][i],
+					tfreq = myBeam.prm.tfreq,
+					noise = myBeam.prm.noisesearch,
+					rTime=myBeam.time,
+					title = self.names[0])
+				self.fan['figure'][i].savefig("%sfan_%s" % (self.filepath[0],self.fan['param'][i]))
+			except:
+				logging.error('fan plot missing info')
+				logging.error('Fan Figure: %s'%(sys.exc_info()[0]))
+			logging.info('Updated Fan Plot')
 
 
 def timeThread(self,data):
@@ -137,6 +141,7 @@ def processMsg(self):
     self.parent.myBeam = beamData()
     self.parent.myBeam.updateValsFromDict(dic)
     self.parent.myBeam.prm.updateValsFromDict(dic)
+    logging.info("Param values: %s " % (str(self.parent.myBeam.prm)))
     '''
     if self.parent.myBeam.prm.rsep != self.parent.site.rsep:
         logging.info('Difference in rsep: %s' % str(self.parent.site.rsep),' : ',str(self.parent.myBeam.prm.rsep))
@@ -155,7 +160,8 @@ def processMsg(self):
     #time = self.parent.myBeam.time
     #self.parent.myBeam.time = datetime.datetime(time['yr'],time['mo'],\
     #time['dy'],time['hr'],time['mt'],time['sc'])
-    self.parent.myBeam.time = datetime.datetime.now() # TODO: uh.. 
+    self.parent.myBeam.time = datetime.datetime(dic['time.yr'],dic['time.mo'],\
+    	dic['time.dy'],dic['time.hr'],dic['time.mt'],dic['time.sc']) 
 
     logging.info("Proccessing Beam: %s Time: %s" % (str(self.parent.myBeam.bmnum),str(self.parent.myBeam.time)))
     #inserts removes and inserts new beam data
@@ -171,7 +177,7 @@ def processMsg(self):
     if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
         self.parent.myBeamList.append(self.parent.myBeam)
 
-def incommingData(self,data):						
+def incommingData(self,data):	
     #As soon as any data is received, write it back.
     #print 'Self.data: ',self.data
     #logging.info('Start self.Data: %s' % str(self.data))
@@ -180,24 +186,15 @@ def incommingData(self,data):
     start_count = self.data.count('["{')
     if start_count != 0:
         start_count -= 1
-    logging.info('Start Count: %s' % str(start_count))
+    #logging.info('Start Count: %s' % str(start_count))
     i = 0
-    logging.info('Data: %s' % str(data))
+    #logging.info('Data: %s' % str(data))
     self.data = data
 
-    processMsg(self)
-    '''
-    try:
-        processMsg(self)
-    except:
-        logging.info('Incomming Data %s' % str(sys.exc_info()[0]))
-        logging.info('Data %s' % str(self.data))
-        self.errorCount = self.errorCount + 1
-        logging.error('Error in Data: '+str(self.errorCount))
     while i <= start_count:
         #logging.info('Looping self.Data: %s' % str(self.data))
-        indS = self.find(self.data,'["{')
-        indF = self.find(self.data,'}"]')
+        indS = self.find(self.data,'{"')
+        indF = self.find(self.data,']}')
         #print "Self data has data"
         #print "indS: ",indS," indF: ",indF
         self.parseS = True
@@ -205,11 +202,11 @@ def incommingData(self,data):
             if indS != -1:
                 self.parseP = True
                 #logging.info("Self data complete data")
-                indF = self.find(data,'}"]')
+                indF = self.find(data,'}]')
             else:
                 #logging.info("Self data doesn't have data")
-                indS = self.find(data,'["{')
-                indF = self.find(data,'}"]')
+                indS = self.find(data,'{"')
+                indF = self.find(data,'}]')
 
             #print "indS: ",indS," indF: ",indF
             self.parseS = False
@@ -220,22 +217,22 @@ def incommingData(self,data):
         if indS != -1 and indF != -1:
             if self.parseS:
                 if i == start_count:
-                    self.data2 = self.data[indF+3:]+data
+                    self.data2 = self.data[indF+2:]+data
                 else:
-                    self.data2 = self.data[indF+3:]
-                self.data = self.data[indS:indF+3]
+                    self.data2 = self.data[indF+2:]
+                self.data = self.data[indS:indF+2]
             elif self.parseP:
-                self.data = self.data[indS:] + data[:indF+3]
-                data = data[indF+3:]
+                self.data = self.data[indS:] + data[:indF+2]
+                data = data[indF+2:]
                 self.parseP = False
             else:
-                self.data = data[indS:indF+3]
-                data = data[indF+3:]
+                self.data = data[indS:indF+2]
+                data = data[indF+2:]
             #logging.info('In 1')
             self.comp = True
         elif indF != -1:
-            self.data = self.data + data[:indF+3]
-            data = data[indF+3:]
+            self.data = self.data + data[:indF+2]
+            data = data[indF+2:]
             #logging.info('In 2')
             self.comp = True
         elif indS != -1:
@@ -249,18 +246,20 @@ def incommingData(self,data):
             #logging.info('In else')
         if self.comp:
             #print 'Process Msg Full data: ',self.data
-            try:
-                processMsg(self)
+            #try:
+            processMsg(self)
+            '''
             except:
                 logging.info('Incomming Data %s' % str(sys.exc_info()[0]))
                 logging.info('Data %s' % str(self.data))
                 self.errorCount = self.errorCount + 1
                 logging.error('Error in Data: '+str(self.errorCount))
+                '''
             if self.parseS:
-                data = self.data[indF+3:]+data
+                data = self.data[indF+2:]+data
                 self.parseS = False
                 #print 'Data in if: ',data
-            indS = self.find(data,'["{')
+            indS = self.find(data,'{"')
             if indS != -1:
                 self.data = data[indS:]
             else:
@@ -271,7 +270,6 @@ def incommingData(self,data):
             self.data = self.data2
             self.data2 = None
         i +=1
-    '''
 
 class EchoClient(protocol.Protocol):
     def connectionMade(self):
