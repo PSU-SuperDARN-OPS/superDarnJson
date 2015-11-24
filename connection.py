@@ -124,8 +124,14 @@ def processMsg(self):
     #json loads the data
     #import pdb 
     #pdb.set_trace()
-
-    dic = json.loads(self.data)
+    try:
+        dic = json.loads(self.data)
+    except ValueError:
+        # errors out if we got multiple packets (race condition)
+        # If we get more than one dictionary, just skip the whole thing
+        # this shouldn't happen very often
+        logging.info("Error decoding dictionary, skipping packet")
+        return
     
     #prm data update
     self.parent.myBeam = beamData()
