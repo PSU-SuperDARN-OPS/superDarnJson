@@ -68,7 +68,7 @@ def readPacket(sock):
 
     # this isn't very robust.. try to find header.. or something that looks like header
     starttime = datetime.datetime.now()
-
+    
     while datacode != 65537:
         print 'looking for header..'
         datacode = recv_dtype(sock, np.int32)
@@ -136,6 +136,9 @@ def main():
     timeout = False
     PORT_JSON_SERVE = 6030
     
+    s = None
+    s_json = None
+    json_conn = None
     while True:
         try:
             s_json = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -148,19 +151,26 @@ def main():
 
             while True:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((HOST, PORT)) 
+                s.connect((HOST, PORT))
+                s.settimeout(30.0)
+
                 while not timeout:
                     scalars, vectors, timeout = readPacket(s)
                     json_str = createjson(scalars, vectors)
                     print json_str
                     json_conn.send(json_str)
+
+                print('timed out on dmap feed, restarting server')
                 s.close() 
                 time.sleep(RESTART_DELAY)
         except:
             print('crashed, restarting server')
-            s_json.close()
-            s.close()
-            json_conn.close()
+            if s_json:
+                s_json.close()
+            if s:
+                s.close()
+            if json_conn:
+                json_conn.close()
             time.sleep(15)
 
 
