@@ -9,6 +9,7 @@ import time
 import json
 import datetime
 import time
+import signal
 
 DATACODE = 33
 DATACHAR = 1
@@ -133,26 +134,34 @@ def main():
     HOST = 'superdarn.gi.alaska.edu'
     PORT = 6024
     timeout = False
-    PORT_JSON_SERVE = 6025
-
-    s_json = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s_json.bind(('', PORT_JSON_SERVE))
-    s_json.listen(10)
-    s_json.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-    print('waiting for connection..')
-    json_conn, json_addr = s_json.accept()
-    print('connected!')
-
+    PORT_JSON_SERVE = 6030
+    
     while True:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((HOST, PORT)) 
-        while not timeout:
-            scalars, vectors, timeout = readPacket(s)
-            json_str = createjson(scalars, vectors)
-            print json_str
-            json_conn.send(json_str)
-        s.close() 
-        time.sleep(RESTART_DELAY)
+        try:
+            s_json = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s_json.bind(('', PORT_JSON_SERVE))
+            s_json.listen(10)
+            s_json.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+            print('waiting for connection..')
+            json_conn, json_addr = s_json.accept()
+            print('connected!')
+
+            while True:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((HOST, PORT)) 
+                while not timeout:
+                    scalars, vectors, timeout = readPacket(s)
+                    json_str = createjson(scalars, vectors)
+                    print json_str
+                    json_conn.send(json_str)
+                s.close() 
+                time.sleep(RESTART_DELAY)
+        except:
+            print('crashed, restarting server')
+            s_json.close()
+            s.close()
+            json_conn.close()
+            time.sleep(15)
 
 
 
