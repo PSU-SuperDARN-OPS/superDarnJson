@@ -164,6 +164,8 @@ def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
 	  nrang[i].append(myBeam.prm.nrang)
 	  frang[i].append(myBeam.prm.frang)
 	  nsch[i].append(myBeam.prm.noisesearch)
+	  if myBeam.prm.tfreq is None:
+	  	  myBeam.prm.tfreq = 0
 	  freq[i].append(myBeam.prm.tfreq/1e3)
 	  slist[i].append(myBeam.fit.slist)
 	  mode[i].append(myBeam.prm.ifmode)

@@ -74,9 +74,9 @@ Start the whole program
 def run():
 
 	parseStart()
-	silentRemove(self.filepath[0],'fan.png')
-	silentRemove(self.filepath[0],'geo.png')
-	silentRemove(self.filepath[0],'time.png')
+	#silentRemove(self.filepath[0],'fan.png')
+	#silentRemove(self.filepath[0],'geo.png')
+	#silentRemove(self.filepath[0],'time.png')
 
 #parses input arguments	
 def parseArgs(self):

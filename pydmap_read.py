@@ -1,4 +1,4 @@
-# script for reading in dmap strings over a socket into a dictionary
+﻿# script for reading in dmap strings over a socket into a dictionary
 # 7/1/2015
 # jon klein, jtklein@alaska.edu
 
@@ -33,7 +33,7 @@ DTYPE_CODES = { \
     DATAFLOAT:np.float32,\
     DATASTRING:str}
 
-TIMEOUT = datetime.timedelta(seconds = 30)
+TIMEOUT = datetime.timedelta(seconds = 60)
 RESTART_DELAY = 5
 
 def recv_dtype(sock, dtype, nitems = 1):
@@ -134,36 +134,35 @@ def main():
     HOST = 'superdarn.gi.alaska.edu'
     PORT = 6024
     timeout = False
-    PORT_JSON_SERVE = 6025
+    PORT_JSON_SERVE = 6040
     
     s = None
     s_json = None
     json_conn = None
     while True:
-        try:
-		s_json = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s_json.bind(('', PORT_JSON_SERVE))
-		s_json.listen(10)
-		s_json.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-		print('waiting for connection..')
-		json_conn, json_addr = s_json.accept()
-		print('connected!')
-	
-		while True:
-			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			s.connect((HOST, PORT))
-			s.settimeout(60.0)
-	
-			while not timeout:
-				scalars, vectors, timeout = readPacket(s)
-				json_str = createjson(scalars, vectors)
-				print json_str
-				json_conn.send(json_str)
-	
-			print('timed out on dmap feed, restarting server')
-			s.close() 
-			time.sleep(RESTART_DELAY)
-        
+        #try:
+        s_json = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s_json.bind(('', PORT_JSON_SERVE))
+        s_json.listen(10)
+        s_json.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+        print('waiting for connection..')
+        json_conn, json_addr = s_json.accept()
+        print('connected!')
+        while True:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((HOST, PORT))
+            s.settimeout(60.0)
+            while not timeout:
+                scalars, vectors, timeout = readPacket(s)
+                json_str = createjson(scalars, vectors)
+                print json_str
+                json_conn.send(json_str)
+            if timeout:
+                break
+            print('timed out on dmap feed, restarting server')
+            s.close() 
+            time.sleep(RESTART_DELAY)
+        '''
         except:
             print('crashed, restarting server')
             if s_json:
@@ -173,6 +172,7 @@ def main():
             if json_conn:
                 json_conn.close()
             time.sleep(15)
+            '''
             
 
 
