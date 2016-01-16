@@ -6,6 +6,7 @@ from twisted.protocols.basic import LineReceiver
 from pydarn.sdio import beamData, scanData
 import json
 from Queue import Queue 
+import threading
 import os, errno
 import subprocess
 from rtiJS import plotRti
@@ -25,128 +26,133 @@ ProcessData(self)
 clears figure, calls graphing method, saves figure
 
 '''
-def geoThread(self,data):
+class geoThread(threading.Thread):
 	
-	while not data.empty():
-		myScan = data.get()
-		#print 'myScan=',myScan
-		for mb in myScan:
-			myBeam = beamData()
-			myBeam = mb
-			break
-	while True:
-		print 'Geo'
-		print 'Fovs',self.fovs
-		timeNow = datetime.datetime.utcnow()
-		myBeam.time = myBeam.time.replace(tzinfo=None)
-		tdif = timeNow - myBeam.time
-		logging.error('Time difference:%s'%(str(tdif)))
-		if tdif.seconds > 60:
-			logging.error("Break out of Geo thread")
-			try:
-				reactor.stop()
-			except:
-				logging.error('Reactor already stopped')
-			break
-		else:
-			while not data.empty():
+	def __init__(self, parent,data):
+		super(geoThread, self).__init__()
+		self.parent = parent
+		self.data = data
+		self.stoprequest = threading.Event()
+
+	def run(self):
+	
+		while not self.data.empty():
+			myScan = self.data.get(True, 1)
+			#print 'myScan=',myScan
+			for mb in myScan:
 				myBeam = beamData()
-				myBeam = data.get()
+				myBeam = mb
+				break
+		while not self.stoprequest.isSet():
+			timeNow = datetime.datetime.utcnow()
+			myBeam.time = myBeam.time.replace(tzinfo=None)
+			while not self.data.empty():
+				myBeam = beamData()
+				myBeam = self.data.get()
 				#print 'myBeam=',myBeam
 				myScan.pop(myBeam.bmnum)
 				myScan.insert(myBeam.bmnum,myBeam)
 			
 		
 			try:
-				self.geo['figure'] = plotFan(myScan,[self.rad],
-					fovs = self.fovs,
-					params=self.geo['param'],
-					gsct=self.geo['gsct'], 
-					maxbeams = int(self.maxbeam[0]),
-					maxgates=int(self.nrangs[0]),	
-					scales=self.geo['sc'],
-					drawEdge = self.geo['drawEdge'], 
-					myFigs = self.geo['figure'],
+				self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
+					fovs = self.parent.fovs,
+					params=self.parent.geo['param'],
+					gsct=self.parent.geo['gsct'], 
+					maxbeams = int(self.parent.maxbeam[0]),
+					maxgates=int(self.parent.nrangs[0]),	
+					scales=self.parent.geo['sc'],
+					drawEdge = self.parent.geo['drawEdge'], 
+					myFigs = self.parent.geo['figure'],
 					bmnum = myBeam.bmnum,
-					site = self.site,
+					site = self.parent.site,
 					tfreq = myBeam.prm.tfreq,
 					noise = myBeam.prm.noisesearch,
 					rTime=myBeam.time,
-					title = self.names[0],
-					dist = self.dist,
-					llcrnrlon = self.llcrnrlon,
-					llcrnrlat = self.llcrnrlat,
-					urcrnrlon = self.urcrnrlon,
-					urcrnrlat = self.urcrnrlat,
-					lon_0 = self.lon_0,
-					lat_0 = self.lat_0,
-					merGrid = self.geo['merGrid'],
-					merColor = self.geo['merColor'],
-					continentBorder = self.geo['continentBorder'],
-					waterColor = self.geo['waterColor'],
-					continentColor = self.geo['continentColor'],
-					backgColor = self.geo['backgColor'],
-					gridColor = self.geo['gridColor'],
-					filepath = self.filepath[0])
+					title = self.parent.names[0],
+					dist = self.parent.dist,
+					llcrnrlon = self.parent.llcrnrlon,
+					llcrnrlat = self.parent.llcrnrlat,
+					urcrnrlon = self.parent.urcrnrlon,
+					urcrnrlat = self.parent.urcrnrlat,
+					lon_0 = self.parent.lon_0,
+					lat_0 = self.parent.lat_0,
+					merGrid = self.parent.geo['merGrid'],
+					merColor = self.parent.geo['merColor'],
+					continentBorder = self.parent.geo['continentBorder'],
+					waterColor = self.parent.geo['waterColor'],
+					continentColor = self.parent.geo['continentColor'],
+					backgColor = self.parent.geo['backgColor'],
+					gridColor = self.parent.geo['gridColor'],
+					filepath = self.parent.filepath[0])
 			except:
 				logging.error('geographic plot missing info')
 				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
 			logging.info('Updated Geographic Plot')
-			for i in range(len(self.fan['figure'])):
+			for i in range(len(self.parent.fan['figure'])):
 				try:
-					self.fan['figure'][i].clf()
-					self.fan['figure'][i]=plotFgpJson(myScan,self.rad,
-						params=[self.fan['param'][i]],
-						gsct=self.fan['gsct'],
-						scales=[self.fan['sc'][i]],
+					self.parent.fan['figure'][i].clf()
+					self.parent.fan['figure'][i]=plotFgpJson(myScan,self.parent.rad,
+						params=[self.parent.fan['param'][i]],
+						gsct=self.parent.fan['gsct'],
+						scales=[self.parent.fan['sc'][i]],
 						bmnum = myBeam.bmnum,
-						figure = self.fan['figure'][i],
+						figure = self.parent.fan['figure'][i],
 						tfreq = myBeam.prm.tfreq,
 						noise = myBeam.prm.noisesearch,
 						rTime=myBeam.time,
-						title = self.names[0])
-					self.fan['figure'][i].savefig("%sfan_%s" % (self.filepath[0],self.fan['param'][i]))
+						title = self.parent.names[0])
+					self.parent.fan['figure'][i].savefig("%sfan_%s" % (self.parent.filepath[0],self.parent.fan['param'][i]))
 				except:
 					logging.error('fan plot missing info')
 					logging.error('Fan Figure: %s'%(sys.exc_info()[0]))
 				logging.info('Updated Fan Plot')
+				
+	def join(self, timeout=None):
+		self.stoprequest.set()
+		logging.info("Closing geoThread")
+		super(geoThread, self).join(timeout)
 
+class timeThread(threading.Thread):
+	
+	def __init__(self, parent, data):
+		super(timeThread, self).__init__()
+		self.parent = parent
+		self.data = data
+		self.stoprequest = threading.Event()
+	
+	def run(self):
+		myBeamList = scanData()
+		while not self.stoprequest.isSet():
 
-def timeThread(self,data):
-    myBeamList = scanData()
-    while True:
-    	timeNow = datetime.datetime.utcnow()
-    	myBeam.time = myBeam.time.replace(tzinfo=None)
-    	tdif = timeNow - myBeam.time
-    	logging.error('Time difference: %s'%(str(tdif)))
-    	if tdif.seconds > 60:
-			logging.error("Break out of Time thread")
-			try:
-				reactor.stop()
-			except:
-				logging.error('Reactor already stopped')
-			break
-        while not data.empty():
-            myBeam = beamData()
-            myBeam = data.get()
-            myBeamList.append(myBeam)
-            if len(myBeamList)>2:
-                try:
-                    self.time['figure'].clf()
-                    self.time['figure']=plotRti(myBeamList,
-                            self.rad,
-                            params=self.time['param'],
-                            scales=self.time['sc'],
-                            gsct=self.time['gsct'],
-                            bmnum = int(self.beams[0]),
-                            figure = self.time['figure'],
-                            rTime = myBeam.time,
-                            title = self.names[0])
-                    self.time['figure'].savefig("%stime" % (self.filepath[0]))
-                except:
-                    logging.error('time plot missing info')
-                    logging.error('Time Figure: %s' %(sys.exc_info()[0]))
-                logging.info('Updated Time Plot')
+			while not self.data.empty():
+				myBeam = beamData()
+				myBeam = self.data.get(True, 10)
+				timeNow = datetime.datetime.utcnow()
+				myBeam.time = myBeam.time.replace(tzinfo=None)
+				myBeamList.append(myBeam)
+				if len(myBeamList)>2:
+					try:
+						self.parent.time['figure'].clf()
+						self.parent.time['figure']=plotRti(myBeamList,
+								self.parent.rad,
+								params=self.parent.time['param'],
+								scales=self.parent.time['sc'],
+								gsct=self.parent.time['gsct'],
+								bmnum = int(self.parent.beams[0]),
+								figure = self.parent.time['figure'],
+								rTime = myBeam.time,
+								title = self.parent.names[0])
+						self.parent.time['figure'].savefig("%stime" % (self.parent.filepath[0]))
+					except:
+						logging.error('time plot missing info')
+						logging.error('Time Figure: %s' %(sys.exc_info()[0]))
+					logging.info('Updated Time Plot')
+	def join(self, timeout=None):
+		self.stoprequest.set()
+		logging.info("Closing timeThread")
+		super(timeThread, self).join(timeout)
+					
 
 
 def processMsg(self):
@@ -167,7 +173,6 @@ def processMsg(self):
     self.parent.myBeam = beamData()
     self.parent.myBeam.updateValsFromDict(dic)
     self.parent.myBeam.prm.updateValsFromDict(dic)
-    logging.info("Param values: %s " % (str(self.parent.myBeam.prm)))
     '''
     if self.parent.myBeam.prm.rsep != self.parent.site.rsep:
         logging.info('Difference in rsep: %s' % str(self.parent.site.rsep),' : ',str(self.parent.myBeam.prm.rsep))
@@ -335,24 +340,26 @@ class EchoFactory(protocol.ClientFactory):
     def clientConnectionFailed(self, connector, reason):
         logging.debug("Connection failed - goodbye!")
         logging.debug('Closed Connection')
-        createData(self)
+        reactor.stop()
+        self.gt.join()
+        self.tt.join()
         for pr in self.parent.fan['param']:
             silentRemove(self,"fan_%s.png" % (pr))
             silentRemove(self,"geo_%s.png" % (pr))
         silentRemove(self,'time.png')
-        self.first = True
-        reactor.stop()
+
 
     def clientConnectionLost(self, connector, reason):
         logging.debug("Connection lost - goodbye!")
         logging.debug('Closed Connection')
-        createData(self)
+        reactor.stop()
+        self.gt.join()
+        self.tt.join()
         for pr in self.parent.fan['param']:
             silentRemove(self,"fan_%s.png" % (pr))
             silentRemove(self,"geo_%s.png" % (pr))
         silentRemove(self,'time.png')
-        self.first = True
-        reactor.stop()
+
 
 #connects server
 def serverCon(self):
@@ -365,8 +372,10 @@ def serverCon(self):
     f.gque = Queue()
     f.gque.put(self.myScan)
     f.tque = Queue()
-    gt = reactor.callInThread(geoThread, self,f.gque)
-    tt = reactor.callInThread(timeThread, self,f.tque)
+    f.gt = geoThread(self,f.gque)
+    f.tt = timeThread(self,f.tque)
+    f.gt.start()
+    f.tt.start()
     reactor.connectTCP(self.hosts[0], int(self.ports[0]), f)
     reactor.run(installSignalHandlers=0)
 

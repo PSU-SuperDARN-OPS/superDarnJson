@@ -3,7 +3,7 @@ SERVICE='basic_gui.py'
  
 if ps ax | grep -v grep | grep $SERVICE > /dev/null
 then
-    echo "$SERVICE service running, everything is fine"
+    continue
 else
     echo "$SERVICE is not running"
     pkill -9 -f pydmap_read.py
