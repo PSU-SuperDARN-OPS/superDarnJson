@@ -7,14 +7,12 @@
 **Module**: utils.plotUtils
 *********************
 Basic plotting tools
-
 **Functions**:
   * :func:`utils.plotUtils.mapObj`: Create empty map 
   * :func:`utils.plotUtils.genCmap`: generate a custom colormap
   * :func:`utils.plotUtils.drawCB`: draw a colorbar
   * :func:`utils.plotUtils.curvedEarthAxes`: Plot axes in (R, Theta) coordinates with lower limit at R = Earth radius
   * :func:`utils.plotUtils.addColorbar`: Colorbar for :func:`curvedEarthAxes`
-
 """
 from mpl_toolkits import basemap
 
@@ -31,7 +29,6 @@ class mapObj(basemap.Basemap):
     * all methods of :class:`mpl_toolkits.basemap.Basemap` (<http://tinyurl.com/d4rzmfo>)
   **Example**:
     ::
-
       # Create the map
       myMap = utils.mapObj(boundinglat=30, coords='mag')
       # Plot the geographic and geomagnetic North Poles
@@ -43,9 +40,7 @@ class mapObj(basemap.Basemap):
       x, y = myMap(0., 90., coords='mag')
       # ...and plot
       myMap.scatter(x, y, zorder=2, color='g')
-
   .. note:: Once the map is created, all plotting calls will be assumed to already be in the map's declared coordinate system given by **coords**.
-
   """
 
   def __init__(self, datetime=None, coords='geo', 
@@ -71,7 +66,6 @@ class mapObj(basemap.Basemap):
       * **map**: a Basemap object (<http://tinyurl.com/d4rzmfo>)
     **Example**:
       ::
-
         myMap = mapObj(lat_0=50, lon_0=-95, width=111e3*60, height=111e3*60)
         
     written by Sebastien, 2013-02
@@ -244,7 +238,6 @@ class mapObj(basemap.Basemap):
 ################################################################################
 def genCmap(param, scale, colors='lasse', lowGray=False):
   """Generates a colormap and returns the necessary components to use it
-
   **Args**:
     * **param** (str): the parameter being plotted ('velocity' and 'phi0' are special cases, anything else gets the same color scale)
     * **scale** (list): a list with the [min,max] values of the color scale
@@ -254,10 +247,8 @@ def genCmap(param, scale, colors='lasse', lowGray=False):
     * **cmap** (`matplotlib.colors.ListedColormap <http://matplotlib.org/api/colors_api.html?highlight=listedcolormap#matplotlib.colors.ListedColormap>`_): the colormap generated.  This then gets passed to the mpl plotting function (e.g. scatter, plot, LineCollection, etc.)
     * **norm** (`matplotlib.colors.BoundaryNorm <http://matplotlib.org/api/colors_api.html?highlight=matplotlib.colors.boundarynorm#matplotlib.colors.BoundaryNorm>`_): the colormap index.  This then gets passed to the mpl plotting function (e.g. scatter, plot, LineCollection, etc.)
     * **bounds** (list): the boundaries of each of the colormap segments.  This can be used to manually label the colorbar, for example.
-
   **Example**:
     ::
-
       cmap,norm,bounds = genCmap('velocity', [-200,200], colors='aj', lowGray=True)
     
   Written by AJ 20120820
@@ -359,7 +350,6 @@ def genCmap(param, scale, colors='lasse', lowGray=False):
 ################################################################################
 def drawCB(fig,coll,cmap,norm,map=False,pos=[0,0,1,1]):
   """manually draws a colorbar on a figure.  This can be used in lieu of the standard mpl colorbar function if you need the colorbar in a specific location.  See :func:`pydarn.plotting.rti.plotRti` for an example of its use.
-
   **Args**:
     * **fig** (`matplotlib.figure.Figure <http://matplotlib.org/api/figure_api.html#matplotlib.figure.Figure>`_): the figure being drawn on.
     * **coll** (`matplotlib.collections.Collection <http://matplotlib.org/api/collections_api.html?highlight=collection#matplotlib.collections.Collection>`_: the collection using this colorbar
@@ -368,11 +358,8 @@ def drawCB(fig,coll,cmap,norm,map=False,pos=[0,0,1,1]):
     * **[map]** (boolean): a flag indicating the we are drawing the colorbar on a figure with a map plot
     * **[pos]** (list): the position of the colorbar.  format = [left,bottom,width,height]
   **Returns**:
-
-
   **Example**:
     ::
-
       cmap,norm,bounds = genCmap('velocity', [-200,200], colors='aj', lowGray=True)
     
   Written by AJ 20120820
@@ -429,7 +416,6 @@ def curvedEarthAxes(rect=111, fig=None,
       * **aax**: matplotlib.axes object containing data
   **Example**:
       ::
-
           import numpy as np
           from utils import plotUtils
           ax, aax = plotUtils.curvedEarthAxes()
@@ -439,7 +425,6 @@ def curvedEarthAxes(rect=111, fig=None,
           x, y = np.meshgrid(th, r)
           im = aax.pcolormesh(x, y, Z.T)
           ax.grid()
-
           
   written by Sebastien, 2013-04
   """
@@ -516,15 +501,12 @@ def curvedEarthAxes(rect=111, fig=None,
 ################################################################################
 def addColorbar(mappable, ax):
   """ Append colorbar to axes
-
   **Args**:
     * **mappable**: a mappable object
     * **ax**: an axes object
   **Returns**:
     * **cbax**: colorbar axes object
-
   .. note:: This is mostly useful for axes created with :func:`curvedEarthAxes`.
-
   written by Sebastien, 2013-04
   """
   from mpl_toolkits.axes_grid1 import SubplotDivider, LocatableAxes, Size

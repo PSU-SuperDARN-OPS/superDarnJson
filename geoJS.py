@@ -28,19 +28,15 @@
     * :func:`pydarn.plotting.fan.overlayFan`
 """
     
-import pydarn,numpy,math,matplotlib,calendar,datetime,utils,pylab
-import logging
-import matplotlib.pyplot as plot
-import matplotlib.lines as lines
-from matplotlib.ticker import MultipleLocator
-import matplotlib.patches as patches
+import numpy,math,datetime
 from matplotlib.collections import PolyCollection,LineCollection
-from mpl_toolkits.basemap import Basemap, pyproj
 from utils.timeUtils import *
+from utils.plotUtils import genCmap
+from utils import mapObj
+from pydarn.plotting import overlayFov
+from pydarn.radar import radFov
+from pydarn.sdio import beamData
 from pydarn.sdio.radDataRead import *
-from matplotlib.figure import Figure
-import matplotlib.cm as cm
-from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 
 def plotFan(myScan,rad,params='velocity',filtered=False ,\
@@ -53,7 +49,8 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		tfreq = None, noise = None,rTime = None, title = None,dist = None,
 		llcrnrlon=None,llcrnrlat=None,urcrnrlon=None,urcrnrlat=None,lon_0=None,lat_0=None,
 		merGrid = True,merColor = '0.75',continentBorder = '0.75',
-		waterColor = '#cce5ff',continentColor = 'w',backgColor='w',gridColor='k',filepath = None):
+		waterColor = '#cce5ff',continentColor = 'w',backgColor='w',gridColor='k',\
+		filepath = None,totVerts = None,myMap = None):
 
     """A function to make a fan plot
     
@@ -94,10 +91,8 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
     """
 
     
-    import datetime as dt, gme, pickle
-    from matplotlib.backends.backend_pdf import PdfPages
-    import models.aacgm as aacgm, os, copy
-    tt = dt.datetime.now()
+    import gme
+
     #check the inputs
     assert(isinstance(rad,list)),"error, rad must be a list, eg ['bks'] or ['bks','fhe']"
     for r in rad:
@@ -135,21 +130,21 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 			
 		fbase = datetime.datetime.utcnow().strftime("%Y%m%d")
 			
-		cmap,norm,bounds = utils.plotUtils.genCmap(param,scale,colors=colors,lowGray=lowGray)
+		cmap,norm,bounds = genCmap(param,scale,colors=colors,lowGray=lowGray)
 		
 		myBands = []
 		for i in range(len(rad)):
 			myBands.append(tbands[i])
 		
-		myMap = utils.mapObj(coords='geo', projection='stere', lat_0=lat_0, lon_0=lon_0,
-											 llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat, urcrnrlon=urcrnrlon,
-											 urcrnrlat=urcrnrlat,grid =merGrid,
-											 lineColor=merColor)
+		if myMap is None:
+			myMap = mapObj(coords='geo', projection='stere', lat_0=lat_0, lon_0=lon_0,
+												 llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat, urcrnrlon=urcrnrlon,
+												 urcrnrlat=urcrnrlat,grid =merGrid,
+												 lineColor=merColor)
 		myMap.drawcoastlines(linewidth=0.5,color=continentBorder)
 		myMap.drawmapboundary(fill_color=waterColor)
 		myMap.fillcontinents(color=continentColor, lake_color=waterColor)
 		#now, loop through desired time interval
-		tz = dt.datetime.now()
 		cols = []
 		ft = 'None'
 		#go though all files
@@ -162,8 +157,11 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		continentColor = 'w'
 		merColor = '0.75'
 		cTime = datetime.datetime.utcnow()
-		pydarn.plotting.overlayFov(myMap,site = site,fovColor=backgColor, lineColor=gridColor, dateTime=cTime, fovObj=fovs[0]) 
-		intensities, pcoll = overlayFan(myScan,myMap,myFig,param,coords,gsct=gsct,site=site,fov=fovs[0], fill=fill,velscl=velscl,dist=dist,cmap=cmap,norm=norm)
+		overlayFov(myMap,site = site,fovColor=backgColor,\
+			lineColor=gridColor, dateTime=cTime, fovObj=fovs[0]) 
+		intensities, pcoll = overlayFan(myScan,myMap,myFig,param,coords,\
+			gsct=gsct,site=site,fov=fovs[0], fill=fill,velscl=velscl,\
+			dist=dist,cmap=cmap,norm=norm,totVerts = totVerts)
 		#if no data has been found pcoll will not have been set, and the following code will object                                   
 		if pcoll: 
 			cbar = myFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1,drawedges=drawEdge)
@@ -227,7 +225,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 
 def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
                                 fov=None,gs_flg=[],fill=True,velscl=1000.,dist=1000.,
-                                cmap=None,norm=None,alpha=1):
+                                cmap=None,norm=None,alpha=1,totVerts = None):
 
     """A function of overlay radar scan data on a map
 
@@ -260,10 +258,10 @@ def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
     if(site == None):
         site = RadarPos(myData[0].stid)
     if(fov == None):
-        fov = pydarn.radar.radFov.fov(site=site,rsep=myData[0].prm.rsep,\
+        fov = radFov.fov(site=site,rsep=myData[0].prm.rsep,\
         ngates=myData[0].prm.nrang+1,nbeams= site.maxbeam,coords=coords) 
     
-    if(isinstance(myData,pydarn.sdio.beamData)): myData = [myData]
+    if(isinstance(myData,beamData)): myData = [myData]
     
     gs_flg,lines = [],[]
     if fill: verts,intensities = [],[]
@@ -273,44 +271,63 @@ def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
     for myBeam in myData:
     	if myBeam.fit.slist is not None:
 			for k in range(0,len(myBeam.fit.slist)):
-				if myBeam.fit.slist[k] not in fov.gates: continue
-				r = myBeam.fit.slist[k]
-				if fill:
-					x1,y1 = myMap(fov.lonFull[myBeam.bmnum,r],fov.latFull[myBeam.bmnum,r])
-					x2,y2 = myMap(fov.lonFull[myBeam.bmnum,r+1],fov.latFull[myBeam.bmnum,r+1])
-					x3,y3 = myMap(fov.lonFull[myBeam.bmnum+1,r+1],fov.latFull[myBeam.bmnum+1,r+1])
-					x4,y4 = myMap(fov.lonFull[myBeam.bmnum+1,r],fov.latFull[myBeam.bmnum+1,r])
-					#save the polygon vertices
-					verts.append(((x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)))
-					#save the param to use as a color scale
-					if(param == 'velocity'): intensities.append(myBeam.fit.v[k])
-					elif(param == 'power'): intensities.append(myBeam.fit.p_l[k])
-					elif(param == 'width'): intensities.append(myBeam.fit.w_l[k])
-					elif(param == 'elevation' and myBeam.prm.xcf): intensities.append(myBeam.fit.elv[k])
-					elif(param == 'phi0' and myBeam.prm.xcf): intensities.append(myBeam.fit.phi0[k])
-					
+				if totVerts is not None:
+					#print "In total verts if statement"
+					if myBeam.fit.slist[k] not in fov.gates: continue
+					r = myBeam.fit.slist[k]
+					if fill:
+						x1,y1 = myMap(totVerts[myBeam.bmnum][r][0][0],totVerts[myBeam.bmnum][r][0][1])
+						x2,y2 = myMap(totVerts[myBeam.bmnum][r][1][0],totVerts[myBeam.bmnum][r][1][1])
+						x3,y3 = myMap(totVerts[myBeam.bmnum][r][2][0],totVerts[myBeam.bmnum][r][2][1])
+						x4,y4 = myMap(totVerts[myBeam.bmnum][r][3][0],totVerts[myBeam.bmnum][r][3][1])
+						#save the polygon vertices
+						verts.append(((x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)))
+						#save the param to use as a color scale
+						if(param == 'velocity'): intensities.append(myBeam.fit.v[k])
+						elif(param == 'power'): intensities.append(myBeam.fit.p_l[k])
+						elif(param == 'width'): intensities.append(myBeam.fit.w_l[k])
+						elif(param == 'elevation' and myBeam.prm.xcf): intensities.append(myBeam.fit.elv[k])
+						elif(param == 'phi0' and myBeam.prm.xcf): intensities.append(myBeam.fit.phi0[k])
+					if(gsct): gs_flg.append(myBeam.fit.gflg[k])
 				else:
-					x1,y1 = myMap(fov.lonCenter[myBeam.bmnum,r],fov.latCenter[myBeam.bmnum,r])
-					verts[0].append(x1)
-					verts[1].append(y1)
-					
-					x2,y2 = myMap(fov.lonCenter[myBeam.bmnum,r+1],fov.latCenter[myBeam.bmnum,r+1])
-					
-					theta = math.atan2(y2-y1,x2-x1)
-					
-					x2,y2 = x1+myBeam.fit.v[k]/velscl*(-1.0)*math.cos(theta)*dist,y1+myBeam.fit.v[k]/velscl*(-1.0)*math.sin(theta)*dist
-					
-					lines.append(((x1,y1),(x2,y2)))
-					#save the param to use as a color scale
-					if(param == 'velocity'): intensities[0].append(myBeam.fit.v[k])
-					elif(param == 'power'): intensities[0].append(myBeam.fit.p_l[k])
-					elif(param == 'width'): intensities[0].append(myBeam.fit.w_l[k])
-					elif(param == 'elevation' and myBeam.prm.xcf): intensities[0].append(myBeam.fit.elv[k])
-					elif(param == 'phi0' and myBeam.prm.xcf): intensities[0].append(myBeam.fit.phi0[k])
-					
-					if(myBeam.fit.p_l[k] > 0): intensities[1].append(myBeam.fit.p_l[k])
-					else: intensities[1].append(0.)
-				if(gsct): gs_flg.append(myBeam.fit.gflg[k])
+					if myBeam.fit.slist[k] not in fov.gates: continue
+					r = myBeam.fit.slist[k]
+					if fill:
+						x1,y1 = myMap(fov.lonFull[myBeam.bmnum,r],fov.latFull[myBeam.bmnum,r])
+						x2,y2 = myMap(fov.lonFull[myBeam.bmnum,r+1],fov.latFull[myBeam.bmnum,r+1])
+						x3,y3 = myMap(fov.lonFull[myBeam.bmnum+1,r+1],fov.latFull[myBeam.bmnum+1,r+1])
+						x4,y4 = myMap(fov.lonFull[myBeam.bmnum+1,r],fov.latFull[myBeam.bmnum+1,r])
+						#save the polygon vertices
+						verts.append(((x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)))
+						#save the param to use as a color scale
+						if(param == 'velocity'): intensities.append(myBeam.fit.v[k])
+						elif(param == 'power'): intensities.append(myBeam.fit.p_l[k])
+						elif(param == 'width'): intensities.append(myBeam.fit.w_l[k])
+						elif(param == 'elevation' and myBeam.prm.xcf): intensities.append(myBeam.fit.elv[k])
+						elif(param == 'phi0' and myBeam.prm.xcf): intensities.append(myBeam.fit.phi0[k])
+						
+					else:
+						x1,y1 = myMap(fov.lonCenter[myBeam.bmnum,r],fov.latCenter[myBeam.bmnum,r])
+						verts[0].append(x1)
+						verts[1].append(y1)
+						
+						x2,y2 = myMap(fov.lonCenter[myBeam.bmnum,r+1],fov.latCenter[myBeam.bmnum,r+1])
+						
+						theta = math.atan2(y2-y1,x2-x1)
+						
+						x2,y2 = x1+myBeam.fit.v[k]/velscl*(-1.0)*math.cos(theta)*dist,y1+myBeam.fit.v[k]/velscl*(-1.0)*math.sin(theta)*dist
+						
+						lines.append(((x1,y1),(x2,y2)))
+						#save the param to use as a color scale
+						if(param == 'velocity'): intensities[0].append(myBeam.fit.v[k])
+						elif(param == 'power'): intensities[0].append(myBeam.fit.p_l[k])
+						elif(param == 'width'): intensities[0].append(myBeam.fit.w_l[k])
+						elif(param == 'elevation' and myBeam.prm.xcf): intensities[0].append(myBeam.fit.elv[k])
+						elif(param == 'phi0' and myBeam.prm.xcf): intensities[0].append(myBeam.fit.phi0[k])
+						
+						if(myBeam.fit.p_l[k] > 0): intensities[1].append(myBeam.fit.p_l[k])
+						else: intensities[1].append(0.)
+					if(gsct): gs_flg.append(myBeam.fit.gflg[k])
 
     #do the actual overlay
     if(fill):

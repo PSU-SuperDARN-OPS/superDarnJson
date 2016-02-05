@@ -2,15 +2,11 @@ from connection import serverCon,disconnect
 from pydarn.sdio import beamData, scanData
 import matplotlib.pyplot as plot
 from radarPos import RadarPos
-import os, errno
-import sys 
+import sys, datetime, pytz
+from utils import plotUtils,mapObj
+from pydarn.radar import radFov
 sys.path.append('~/davitpy')
-import datetime
-import pytz
-import utils
-import numpy as np
 
-import pydarn
 
 '''
 Parses the passed in arguments 
@@ -23,6 +19,9 @@ class parseStart:
 	
 	def __init__(self,*args,**kwargs):
 		parseArgs(self)
+
+					
+		
 		self.i = 0
 		self.rad = self.rad[0]
 		self.fan = None
@@ -32,7 +31,7 @@ class parseStart:
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
-		self.data['gsct'] = False
+		self.data['gsct'] = True
 		self.data['drawEdge'] = False
 		self.data['gridColor']='k'
 		self.data['backgColor'] = 'w'
@@ -44,7 +43,7 @@ class parseStart:
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
-		self.data['gsct'] = False
+		self.data['gsct'] = True
 		self.data['drawEdge'] = False
 		self.data['figure'] = plot.figure(figsize=(12,8))
 		self.time = self.data
@@ -54,7 +53,7 @@ class parseStart:
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
-		self.data['gsct'] = False
+		self.data['gsct'] = True
 		self.data['drawEdge'] = False
 		self.data['gridColor']='k'
 		self.data['backgColor'] = 'w'
@@ -66,6 +65,8 @@ class parseStart:
 		self.data['figure'] = 3*[plot.figure(figsize=(12,8))]
 		self.geo = self.data
 		createData(self)
+		loadVerts(self)
+		#print len(self.verts),self.verts[0][2][0]
 		serverCon(self)
 		
 '''
@@ -74,9 +75,7 @@ Start the whole program
 def run():
 
 	parseStart()
-	#silentRemove(self.filepath[0],'fan.png')
-	#silentRemove(self.filepath[0],'geo.png')
-	#silentRemove(self.filepath[0],'time.png')
+
 
 #parses input arguments	
 def parseArgs(self):
@@ -112,6 +111,7 @@ def parseArgs(self):
 		elif 'filepath' in argL:
 			self.filepath = argL[indEq:].split(',')
 
+
 #creates empty datasets used by all plots
 #datasets later updated by incoming data
 def createData(self):
@@ -120,7 +120,7 @@ def createData(self):
 	for i in range(0, int(self.maxbeam[0])):
 		myBeam = beamData()
 		today = datetime.datetime.utcnow()
-		today = today.replace(tzinfo=pytz.utc)	
+		today = today.replace(tzinfo=pytz.utc)
 		myBeam.time= today
 		myBeam.bmnum = i
 		myBeam.prm.nrang = int(self.nrangs[0])
@@ -129,16 +129,33 @@ def createData(self):
 		self.myScan.append(myBeam)
 	self.site = RadarPos(code = self.rad)
 	self.site.tval = datetime.datetime.utcnow()
-	self.llcrnrlon,self.llcrnrlat,self.urcrnrlon,self.urcrnrlat,self.lon_0,self.lat_0, self.fovs,self.dist = utils.plotUtils.geoLoc(self.site,
+	self.llcrnrlon,self.llcrnrlat,self.urcrnrlon,self.urcrnrlat,self.lon_0,self.lat_0, self.fovs,self.dist = plotUtils.geoLoc(self.site,
 		int(self.nrangs[0]),self.site.rsep,
 		int(self.maxbeam[0]))
+	self.myMap = mapObj(coords='geo', projection='stere', lat_0=self.lat_0, lon_0=self.lon_0,
+											 llcrnrlon=self.llcrnrlon, llcrnrlat=self.llcrnrlat, urcrnrlon=self.urcrnrlon,
+											 urcrnrlat=self.urcrnrlat,grid =True,
+											 lineColor='0.75')
 
-#remove previously written figures
-def silentRemove(figPath,filename):
-    try:
-        os.remove("%s%s" % (figPath,filename))
-    except OSError as e: # this would be "except OSError, e:" before Python 2.6
-        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
-            raise # re-raise exception if a different error occured
+            
+            
+def loadVerts(self):
+	self.verts = []
+
+	fov = radFov.fov(site=self.site,rsep=self.site.rsep,\
+        ngates=int(self.nrangs[0])+1,nbeams= int(self.maxbeam[0]),coords='geo') 
+	for i in range(0, int(self.maxbeam[0])):
+		self.verts.append([])
+		for k in range(0,int(self.nrangs[0])):
+			x1,y1 = fov.lonFull[i,k],fov.latFull[i,k]
+			x2,y2 = fov.lonFull[i,k+1],fov.latFull[i,k+1]
+			x3,y3 = fov.lonFull[i+1,k+1],fov.latFull[i+1,k+1]
+			x4,y4 = fov.lonFull[i+1,k],fov.latFull[i+1,k]
+			#save the polygon vertices
+			self.verts[i].append(((x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)))
+	
+
+
+
 run()
 

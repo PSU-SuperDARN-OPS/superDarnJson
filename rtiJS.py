@@ -33,16 +33,15 @@
 """
 
 
-import pydarn,numpy,math,matplotlib,calendar,datetime,utils,pylab
-import logging
-import matplotlib.pyplot as plot
+import numpy,logging
 import matplotlib.lines as lines
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-from matplotlib.ticker import MultipleLocator
-from matplotlib.collections import PolyCollection
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from matplotlib.dates import date2num, SecondLocator,num2date,DateFormatter
+from matplotlib.cm import *
 from utils.timeUtils import *
 from pydarn.sdio import *
-from matplotlib.figure import Figure
+from pydarn.radar import radFov, radUtils
+from utils import plotUtils,drawCB
 from radarPos import RadarPos
 
 
@@ -88,10 +87,8 @@ def plotRti(myBeamList,rad,bmnum=7,
   Modified by Matt W. 20130715
   Modified by Nathaniel F. 20131031 (added plotTerminator)
   """
-  import os
     
-    
-  t1 = datetime.datetime.now()
+  
   #check the inputs
   assert(isinstance(rad,str) and len(rad) == 3),'error, rad must be a string 3 chars long'
   assert(coords == 'gate' or coords == 'rng' or coords == 'geo' or coords == 'mag'),\
@@ -187,11 +184,7 @@ def plotRti(myBeamList,rad,bmnum=7,
       continue
 
     #get/create a figure
-    if figure == None:
-    	rtiFig = plot.figure(figsize=(11,8.5))
-
-    else:
-        rtiFig = figure
+    rtiFig = figure
         
     #give the plot a title
     rtiTitle(rtiFig,rTime,title,rad,bmnum)
@@ -228,14 +221,14 @@ def plotRti(myBeamList,rad,bmnum=7,
 
       dt_list   = []
       for i in range(len(times[fplot])):
-        x[tcnt]=matplotlib.dates.date2num(times[fplot][i])
+        x[tcnt]=date2num(times[fplot][i])
         dt_list.append(times[fplot][i])
 
         if(i < len(times[fplot])-1):
-          if(matplotlib.dates.date2num(times[fplot][i+1])-x[tcnt] > 4./1440.):
+          if(date2num(times[fplot][i+1])-x[tcnt] > 4./1440.):
             tcnt += 1
             x[tcnt] = x[tcnt-1]+1./1440.
-            dt_list.append(matplotlib.dates.num2date(x[tcnt]))
+            dt_list.append(num2date(x[tcnt]))
         tcnt += 1
             
         if(pArr[i] == []): continue
@@ -249,7 +242,7 @@ def plotRti(myBeamList,rad,bmnum=7,
   
       if (coords != 'gate' and coords != 'rng') or plotTerminator == True:
         site    = RadarPos(ids)
-        myFov   = pydarn.radar.radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
+        myFov   = radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
         myLat   = myFov.latCenter[bmnum]
         myLon   = myFov.lonCenter[bmnum]
           
@@ -292,11 +285,11 @@ def plotRti(myBeamList,rad,bmnum=7,
             ax.pcolormesh(X, Y, daylight.T, lw=0,alpha=0.10,cmap=matplotlib.cm.binary_r,zorder=99)
       ################################################################################
       
-      cmap,norm,bounds = utils.plotUtils.genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
+      cmap,norm,bounds = plotUtils.genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
       
       pcoll = ax.pcolormesh(X, Y, data[:tcnt][:].T, lw=0.01,edgecolors='None',alpha=1,lod=True,cmap=cmap,norm=norm)
   
-      cb = utils.drawCB(rtiFig,pcoll,cmap,norm,map=0,pos=[pos[0]+pos[2]+.02, pos[1], 0.02, pos[3]])
+      cb = drawCB(rtiFig,pcoll,cmap,norm,map=0,pos=[pos[0]+pos[2]+.02, pos[1], 0.02, pos[3]])
       
       l = []
       #define the colorbar labels
@@ -370,7 +363,7 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
   ax.xaxis.set_tick_params(direction='out',which='minor')
 
   #draw the axes
-  ax.plot_date(matplotlib.dates.date2num(times), numpy.arange(len(times)), fmt='w', \
+  ax.plot_date(date2num(times), numpy.arange(len(times)), fmt='w', \
   tz=None, xdate=True, ydate=False, alpha=0.0)
   
   if(yrng == -1):
@@ -382,7 +375,7 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
         oldCpid = cpid[i]
         if(coords == 'geo' or coords == 'mag'):
           site = RadarPos(ids)
-          myFov = pydarn.radar.radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
+          myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
           if(myFov.latFull[bmnum].max() > ymax): ymax = myFov.latFull[bmnum].max()
           if(myFov.latFull[bmnum].min() < ymin): ymin = myFov.latFull[bmnum].min()
         else:
@@ -394,13 +387,13 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
   else:
     ymin,ymax = yrng[0],yrng[1]
 
-  xmin,xmax = matplotlib.dates.date2num(times[0]),matplotlib.dates.date2num(times[len(times)-1])
+  xmin,xmax = date2num(times[0]),date2num(times[len(times)-1])
   xrng = (xmax-xmin)
   inter = int(round(xrng/6.*86400.))
   inter2 = int(round(xrng/24.*86400.))
   #format the x axis
-  ax.xaxis.set_minor_locator(matplotlib.dates.SecondLocator(interval=inter2))
-  ax.xaxis.set_major_locator(matplotlib.dates.SecondLocator(interval=inter))
+  ax.xaxis.set_minor_locator(SecondLocator(interval=inter2))
+  ax.xaxis.set_major_locator(SecondLocator(interval=inter))
 
   
   # ax.xaxis.xticks(size=9)
@@ -417,7 +410,7 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
 
     for tick in ax.xaxis.get_major_ticks():
       tick.label.set_fontsize(xtick_size) 
-  ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%H:%M:%S'))
+  ax.xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
   ax.xaxis.set_label_text('UT')
     
   #set ytick size
@@ -426,18 +419,18 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
   #format y axis depending on coords
   if(coords == 'gate'): 
     ax.yaxis.set_label_text('Range gate',size=10)
-    ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
     ax.yaxis.set_major_locator(MultipleLocator((ymax-ymin)/5.))
     ax.yaxis.set_minor_locator(MultipleLocator((ymax-ymin)/25.))
   elif(coords == 'geo' or coords == 'mag'): 
     if(coords == 'mag'): ax.yaxis.set_label_text('Mag Lat [deg]',size=10)
     else: ax.yaxis.set_label_text('Geo Lat [deg]',size=10)
-    ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%0.2f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%0.2f'))
     ax.yaxis.set_major_locator(MultipleLocator((ymax-ymin)/5.))
     ax.yaxis.set_minor_locator(MultipleLocator((ymax-ymin)/25.))
   elif(coords == 'rng'): 
     ax.yaxis.set_label_text('Slant Range [km]',size=10)
-    ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
     ax.yaxis.set_major_locator(MultipleLocator(1000))
     ax.yaxis.set_minor_locator(MultipleLocator(250))
   
@@ -477,18 +470,18 @@ def plotCpid(myFig,times,cpid,mode,pos=[.1,.77,.76,.05]):
   ax.yaxis.set_tick_params(direction='out',which='minor')
   
   #draw the axes
-  ax.plot_date(matplotlib.dates.date2num(times), numpy.arange(len(times)), fmt='w', \
+  ax.plot_date(date2num(times), numpy.arange(len(times)), fmt='w', \
   tz=None, xdate=True, ydate=False, alpha=0.0)
   
   for i in range(0,len(times)):
     if(cpid[i] != oldCpid):
       
-      ax.plot_date([matplotlib.dates.date2num(times[i]),matplotlib.dates.date2num(times[i])],\
+      ax.plot_date([date2num(times[i]),date2num(times[i])],\
       [0,1], fmt='k-', tz=None, xdate=True, ydate=False)
       
       oldCpid = cpid[i]
       
-      s = ' '+pydarn.radar.radUtils.getCpName(oldCpid)
+      s = ' '+radUtils.getCpName(oldCpid)
     
       istr = ' '
       if(mode[i] == 1): istr = ' IF'
@@ -496,13 +489,13 @@ def plotCpid(myFig,times,cpid,mode,pos=[.1,.77,.76,.05]):
       
       ax.text(times[i],.5,' '+str(oldCpid)+s+istr,ha='left',va='center', size=10)
   
-  xmin,xmax = matplotlib.dates.date2num(times[0]),matplotlib.dates.date2num(times[len(times)-1])
+  xmin,xmax = date2num(times[0]),date2num(times[len(times)-1])
   xrng = (xmax-xmin)
   inter = int(round(xrng/6.*86400.))
   inter2 = int(round(xrng/24.*86400.))
   #format the x axis
-  ax.xaxis.set_minor_locator(matplotlib.dates.SecondLocator(interval=inter2))
-  ax.xaxis.set_major_locator(matplotlib.dates.SecondLocator(interval=inter))
+  ax.xaxis.set_minor_locator(SecondLocator(interval=inter2))
+  ax.xaxis.set_major_locator(SecondLocator(interval=inter))
 
       
   # ax.xaxis.xticks(size=9)
@@ -548,19 +541,19 @@ def plotNoise(myFig,times,sky,search,pos=[.1,.88,.76,.06],xlim=None,xticks=None)
   ax.yaxis.set_minor_locator(MultipleLocator())
   ax.yaxis.set_tick_params(direction='out',which='minor')
   
-  xmin,xmax = matplotlib.dates.date2num(times[0]),matplotlib.dates.date2num(times[len(times)-1])
+  xmin,xmax = date2num(times[0]),date2num(times[len(times)-1])
   xrng = (xmax-xmin)
   inter = int(round(xrng/6.*86400.))
   inter2 = int(round(xrng/24.*86400.))
   #format the x axis
-  ax.xaxis.set_minor_locator(matplotlib.dates.SecondLocator(interval=inter2))
-  ax.xaxis.set_major_locator(matplotlib.dates.SecondLocator(interval=inter))
+  ax.xaxis.set_minor_locator(SecondLocator(interval=inter2))
+  ax.xaxis.set_major_locator(SecondLocator(interval=inter))
 
   if xlim != None: ax.set_xlim(xlim)
   if xticks != None: ax.set_xticks(xticks)
   
   #plot the sky noise data
-  ax.plot_date(matplotlib.dates.date2num(times), numpy.log10(sky), fmt='k-', \
+  ax.plot_date(date2num(times), numpy.log10(sky), fmt='k-', \
   tz=None, xdate=True, ydate=False)
   #remove the x tick labels
   #ax.set_xticklabels([' '])
@@ -586,7 +579,7 @@ def plotNoise(myFig,times,sky,search,pos=[.1,.88,.76,.06],xlim=None,xticks=None)
   ax2.yaxis.set_tick_params(direction='out',which='minor')
   
   #plot the search noise data
-  ax2.plot_date(matplotlib.dates.date2num(times), numpy.log10(search), fmt='k:', \
+  ax2.plot_date(date2num(times), numpy.log10(search), fmt='k:', \
   tz=None, xdate=True, ydate=False,lw=1.5)
 
   ax2.set_xticklabels([' '])
@@ -640,7 +633,7 @@ def plotFreq(myFig,times,freq,nave,pos=[.1,.82,.76,.06],xlim=None,xticks=None):
     #if(f > 16): f = 16
     #if(f < 10): f = 10
     
-  ax.plot_date(matplotlib.dates.date2num(times), freq, fmt='k-', \
+  ax.plot_date(date2num(times), freq, fmt='k-', \
   tz=None, xdate=True, ydate=False,markersize=2)
 
   if xlim != None: ax.set_xlim(xlim)
@@ -651,13 +644,13 @@ def plotFreq(myFig,times,freq,nave,pos=[.1,.82,.76,.06],xlim=None,xticks=None):
   ax.set_yticks([10,16])
   ax.set_yticklabels([' ',' '])
   
-  xmin,xmax = matplotlib.dates.date2num(times[0]),matplotlib.dates.date2num(times[len(times)-1])
+  xmin,xmax = date2num(times[0]),date2num(times[len(times)-1])
   xrng = (xmax-xmin)
   inter = int(round(xrng/6.*86400.))
   inter2 = int(round(xrng/24.*86400.))
   #format the x axis
-  ax.xaxis.set_minor_locator(matplotlib.dates.SecondLocator(interval=inter2))
-  ax.xaxis.set_major_locator(matplotlib.dates.SecondLocator(interval=inter))
+  ax.xaxis.set_minor_locator(SecondLocator(interval=inter2))
+  ax.xaxis.set_major_locator(SecondLocator(interval=inter))
   
   myFig.text(pos[0]-.01,pos[1]+.005,'10',ha='right',va='bottom',size=8)
   myFig.text(pos[0]-.01,pos[1]+pos[3]-.015,'16',ha='right',va='top',size=8)
@@ -676,7 +669,7 @@ def plotFreq(myFig,times,freq,nave,pos=[.1,.82,.76,.06],xlim=None,xticks=None):
   ax2.yaxis.set_minor_locator(MultipleLocator(20))
   ax2.yaxis.set_tick_params(direction='out',which='minor')
   
-  ax2.plot_date(matplotlib.dates.date2num(times), nave, fmt='k:', \
+  ax2.plot_date(date2num(times), nave, fmt='k:', \
   tz=None, xdate=True, ydate=False,markersize=2)
 
   ax2.set_xticklabels([' '])

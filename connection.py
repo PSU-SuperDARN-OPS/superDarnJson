@@ -1,24 +1,18 @@
 ﻿from pydarn.sdio import beamData, scanData
 import logging
-from twisted.internet import reactor, protocol, threads
+from twisted.internet import reactor, protocol
 from twisted.internet.protocol import ClientFactory
-from twisted.protocols.basic import LineReceiver
-from pydarn.sdio import beamData, scanData
 import json
 from Queue import Queue 
-import threading
-import os, errno
-import subprocess
+from threading import Event, Thread
 from rtiJS import plotRti
 from geoJS import plotFan
 from fgpJS import plotFgpJson
 import matplotlib.pyplot as plot
-import sys 
+import sys,datetime,pytz
 sys.path.append('~/davitpy')
-import datetime,pytz
-import numpy as np
-import pydarn
-import utils
+from utils import plotUtils
+import time
 from pydarn.proc.music import getDataSet
 
 '''
@@ -26,30 +20,45 @@ ProcessData(self)
 clears figure, calls graphing method, saves figure
 
 '''
-class geoThread(threading.Thread):
+
+class geoThread(Thread):
 	
-	def __init__(self, parent,data):
+	def __init__(self, parent,data,timeQue):
 		super(geoThread, self).__init__()
 		self.parent = parent
 		self.data = data
-		self.stoprequest = threading.Event()
-
-	def run(self):
+		self.tq = timeQue
+		self.stoprequest = Event()
 	
+	def run(self):
+		
 		while not self.data.empty():
 			myScan = self.data.get(True, 1)
-			#print 'myScan=',myScan
 			for mb in myScan:
 				myBeam = beamData()
 				myBeam = mb
 				break
 		while not self.stoprequest.isSet():
+			time.sleep(0.5)
 			timeNow = datetime.datetime.utcnow()
-			myBeam.time = myBeam.time.replace(tzinfo=None)
+			myBeam.time = myBeam.time.replace(tzinfo=None)	
+			tdif = timeNow - myBeam.time
+			if tdif.seconds > 360:
+				try:
+					reactor.stop()
+				except:
+					logging.error('Reactor already stopped')
+				self.tq.put(0)
+				logging.error('Geo thread stopped')
+				for pr in self.parent.fan['param']:
+					silentRemove(self,"fan_%s.png" % (pr))
+					silentRemove(self,"geo_%s.png" % (pr))
+				silentRemove(self,'time.png')
+				self.stoprequest.set()
+				break
 			while not self.data.empty():
 				myBeam = beamData()
 				myBeam = self.data.get()
-				#print 'myBeam=',myBeam
 				myScan.pop(myBeam.bmnum)
 				myScan.insert(myBeam.bmnum,myBeam)
 			
@@ -84,10 +93,13 @@ class geoThread(threading.Thread):
 					continentColor = self.parent.geo['continentColor'],
 					backgColor = self.parent.geo['backgColor'],
 					gridColor = self.parent.geo['gridColor'],
-					filepath = self.parent.filepath[0])
+					filepath = self.parent.filepath[0],
+					totVerts = self.parent.verts,
+					myMap = self.parent.myMap)
 			except:
 				logging.error('geographic plot missing info')
 				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
+				
 			logging.info('Updated Geographic Plot')
 			for i in range(len(self.parent.fan['figure'])):
 				try:
@@ -113,23 +125,36 @@ class geoThread(threading.Thread):
 		logging.info("Closing geoThread")
 		super(geoThread, self).join(timeout)
 
-class timeThread(threading.Thread):
+class timeThread(Thread):
 	
 	def __init__(self, parent, data):
 		super(timeThread, self).__init__()
 		self.parent = parent
 		self.data = data
-		self.stoprequest = threading.Event()
+		self.stoprequest = Event()
 	
 	def run(self):
 		myBeamList = scanData()
 		while not self.stoprequest.isSet():
-
+			time.sleep(20)
 			while not self.data.empty():
-				myBeam = beamData()
-				myBeam = self.data.get(True, 10)
+				tmpB = self.data.get(True, 20)
+				if tmpB == 0:
+					try:
+						reactor.stop()
+					except:
+						logging.error('Reactor already stopped')
+					logging.error('Time thread stopped')
+					self.stoprequest.set()
+					sys.exit()
+					break
+				else:
+					myBeam = beamData()
+					myBeam = tmpB
 				timeNow = datetime.datetime.utcnow()
 				myBeam.time = myBeam.time.replace(tzinfo=None)
+				tdif = timeNow - myBeam.time
+
 				myBeamList.append(myBeam)
 				if len(myBeamList)>2:
 					try:
@@ -156,10 +181,6 @@ class timeThread(threading.Thread):
 
 
 def processMsg(self):
-    #logging.info('Msg: %s' % str(self.data))
-    #json loads the data
-    #import pdb 
-    #pdb.set_trace()
     try:
         dic = json.loads(self.data)
     except ValueError:
@@ -173,12 +194,7 @@ def processMsg(self):
     self.parent.myBeam = beamData()
     self.parent.myBeam.updateValsFromDict(dic)
     self.parent.myBeam.prm.updateValsFromDict(dic)
-    '''
-    if self.parent.myBeam.prm.rsep != self.parent.site.rsep:
-        logging.info('Difference in rsep: %s' % str(self.parent.site.rsep),' : ',str(self.parent.myBeam.prm.rsep))
-        self.parent.site.rsep = self.parent.myBeam.prm.rsep
-        createData(self)
-    '''
+
     self.endP = False
 
     #fit data update and param noisesky
@@ -188,17 +204,15 @@ def processMsg(self):
 
 
     #updates time to a datetime string
-    #time = self.parent.myBeam.time
-    #self.parent.myBeam.time = datetime.datetime(time['yr'],time['mo'],\
-    #time['dy'],time['hr'],time['mt'],time['sc'])
     self.parent.myBeam.time = datetime.datetime(dic['time.yr'],dic['time.mo'],\
     	dic['time.dy'],dic['time.hr'],dic['time.mt'],dic['time.sc']) 
-
-    logging.info("Proccessing Beam: %s Time: %s" % (str(self.parent.myBeam.bmnum),str(self.parent.myBeam.time)))
+    
     #inserts removes and inserts new beam data
     self.gque.put(self.parent.myBeam)
     if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
         self.tque.put(self.parent.myBeam)
+    if self.parent.i == 160:
+    	self.gt.join()
     logging.info("Proccessing packet: %s" % (str(self.parent.i)))
     self.parent.i = self.parent.i+1
     self.endP = True
@@ -206,41 +220,29 @@ def processMsg(self):
 
 def incommingData(self,data):	
     #As soon as any data is received, write it back.
-    #print 'Self.data: ',self.data
-    #logging.info('Start self.Data: %s' % str(self.data))
 
     self.find = str.find
     start_count = self.data.count('["{')
     if start_count != 0:
         start_count -= 1
-    #logging.info('Start Count: %s' % str(start_count))
     i = 0
-    #logging.info('Data: %s' % str(data))
     self.data = data
 
     while i <= start_count:
-        #logging.info('Looping self.Data: %s' % str(self.data))
+    	time.sleep(0.5)
         indS = self.find(self.data,'{"')
         indF = self.find(self.data,']}')
-        #print "Self data has data"
-        #print "indS: ",indS," indF: ",indF
         self.parseS = True
         if indS == -1 or indF == -1:
             if indS != -1:
                 self.parseP = True
-                #logging.info("Self data complete data")
                 indF = self.find(data,'}]')
             else:
-                #logging.info("Self data doesn't have data")
                 indS = self.find(data,'{"')
                 indF = self.find(data,'}]')
-
-            #print "indS: ",indS," indF: ",indF
             self.parseS = False
         if indF < indS:
             indF = -1;
-        #logging.info("indS: %s indF: %s" % (str(indS),str(indF)))
-        #logging.info("parseS: %s parseP: %s" % (str(self.parseS),str(self.parseP)))
         if indS != -1 and indF != -1:
             if self.parseS:
                 if i == start_count:
@@ -255,12 +257,10 @@ def incommingData(self,data):
             else:
                 self.data = data[indS:indF+2]
                 data = data[indF+2:]
-            #logging.info('In 1')
             self.comp = True
         elif indF != -1:
             self.data = self.data + data[:indF+2]
             data = data[indF+2:]
-            #logging.info('In 2')
             self.comp = True
         elif indS != -1:
             if self.parseP:
@@ -270,22 +270,11 @@ def incommingData(self,data):
                 self.data = data[indS:]
         else:
             self.data = self.data + data
-            #logging.info('In else')
         if self.comp:
-            #print 'Process Msg Full data: ',self.data
-            #try:
             processMsg(self)
-            '''
-            except:
-                logging.info('Incomming Data %s' % str(sys.exc_info()[0]))
-                logging.info('Data %s' % str(self.data))
-                self.errorCount = self.errorCount + 1
-                logging.error('Error in Data: '+str(self.errorCount))
-                '''
             if self.parseS:
                 data = self.data[indF+2:]+data
                 self.parseS = False
-                #print 'Data in if: ',data
             indS = self.find(data,'{"')
             if indS != -1:
                 self.data = data[indS:]
@@ -320,6 +309,7 @@ class EchoClient(protocol.Protocol):
     Recieves data parses apart each packet and updates Scan data
     '''
     def dataReceived(self, data):
+    	time.sleep(0.5)
         incommingData(self,data)
     def connectionLost(self, reason):
         logging.info("Connection Lost")
@@ -331,18 +321,23 @@ Also removes and replaces saved figure with a lost connection identifier
 creates new data array for everything except time data
 
 '''
-class EchoFactory(protocol.ClientFactory):
+class EchoFactory(ClientFactory):
     protocol = EchoClient
     def __init__(self,parent):
         self.parent = parent
 
+	def startedConnecting(self, connector):
+		self.resetDelay()
 
     def clientConnectionFailed(self, connector, reason):
         logging.debug("Connection failed - goodbye!")
         logging.debug('Closed Connection')
         reactor.stop()
-        self.gt.join()
-        self.tt.join()
+        try:
+            self.parent.gt.join()
+            self.parent.tt.join()
+        except:
+            logging.debug("Threads haven't started")
         for pr in self.parent.fan['param']:
             silentRemove(self,"fan_%s.png" % (pr))
             silentRemove(self,"geo_%s.png" % (pr))
@@ -353,31 +348,31 @@ class EchoFactory(protocol.ClientFactory):
         logging.debug("Connection lost - goodbye!")
         logging.debug('Closed Connection')
         reactor.stop()
-        self.gt.join()
-        self.tt.join()
         for pr in self.parent.fan['param']:
             silentRemove(self,"fan_%s.png" % (pr))
             silentRemove(self,"geo_%s.png" % (pr))
         silentRemove(self,'time.png')
 
 
+
 #connects server
+
 def serverCon(self):
-    t_date = datetime.date.today()
-    logging.basicConfig(filename="errlog/err_%s_%s"\
-            % (self.rad,t_date.strftime('%Y%m%d')), level=logging.DEBUG, \
-            format='%(asctime)s %(message)s')
-    f = EchoFactory(self)
-    f.parent = self
-    f.gque = Queue()
-    f.gque.put(self.myScan)
-    f.tque = Queue()
-    f.gt = geoThread(self,f.gque)
-    f.tt = timeThread(self,f.tque)
-    f.gt.start()
-    f.tt.start()
-    reactor.connectTCP(self.hosts[0], int(self.ports[0]), f)
-    reactor.run(installSignalHandlers=0)
+	t_date = datetime.date.today()
+	logging.basicConfig(filename="errlog/err_%s_%s"\
+		% (self.rad,t_date.strftime('%Y%m%d')), level=logging.DEBUG, \
+		format='%(asctime)s %(message)s')
+	f = EchoFactory(self)
+	f.parent = self
+	f.gque = Queue()
+	f.gque.put(self.myScan)
+	f.tque = Queue()
+	f.tt = timeThread(self,f.tque)
+	f.gt = geoThread(self,f.gque,f.tque)
+	f.gt.start()
+	f.tt.start()
+	reactor.connectTCP(self.hosts[0], int(self.ports[0]), f)
+	reactor.run(installSignalHandlers=0)
 
 #disconnects from the server currently never called
 def disconnect(self):
@@ -388,11 +383,11 @@ def disconnect(self):
 
 #Clears figure and replaces with text indicating lost connection
 def silentRemove(self,filename):
-    for fanFig in self.parent.fan['figure']:
-        fanFig.clf()
-        fanFig.text(0.5,0.5,'Lost Connection',backgroundcolor='r',
-                size='x-large',style='oblique',ha='center',va='center')
-        fanFig.savefig("%s%s" % (self.parent.filepath[0],filename))
+	for fanFig in self.parent.fan['figure']:
+		fanFig.clf()
+		fanFig.text(0.5,0.5,'Lost Connection',backgroundcolor='r',
+			size='x-large',style='oblique',ha='center',va='center')
+		fanFig.savefig("%s%s" % (self.parent.filepath[0],filename))
 
 #creates a new data set
 def createData(self):
@@ -410,7 +405,7 @@ def createData(self):
         self.myScan.append(myBeam)
     self.parent.site.tval = datetime.datetime.utcnow()
     self.parent.llcrnrlon,self.parent.llcrnrlat,self.parent.urcrnrlon,self.parent.urcrnrlat,self.parent.lon_0, \
-    self.parent.lat_0, self.parent.fovs,self.parent.dist = utils.plotUtils.geoLoc(self.parent.site,
+    self.parent.lat_0, self.parent.fovs,self.parent.dist = plotUtils.geoLoc(self.parent.site,
             int(self.parent.nrangs[0]),self.parent.site.rsep,
             int(self.parent.maxbeam[0]))
 
