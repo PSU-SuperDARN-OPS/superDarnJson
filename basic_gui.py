@@ -65,8 +65,7 @@ class parseStart:
 		self.data['figure'] = 3*[plot.figure(figsize=(12,8))]
 		self.geo = self.data
 		createData(self)
-		loadVerts(self)
-		#print len(self.verts),self.verts[0][2][0]
+		loadData(self)
 		serverCon(self)
 		
 '''
@@ -137,25 +136,59 @@ def createData(self):
 											 urcrnrlat=self.urcrnrlat,grid =True,
 											 lineColor='0.75')
 
-            
-            
-def loadVerts(self):
-	self.verts = []
+def loadData(self):
+	timeNow = datetime.datetime.utcnow()
+	dFilenm = 'data/'+`timeNow.month`+`timeNow.day`+`timeNow.year`+'_'+self.rad
+	try:
+		with open(dFilenm,'r+') as f:
+			for line in f:
+				spiltline = line.split(';')
+				myBeam = beamData()
+				myBeam.stid = int(spiltline[0])
+				myBeam.bmnum = int(self.beams[0])
+				myBeam.time = createDt(spiltline[1])
+				myBeam.cp = int(spiltline[2])
+				myBeam.prm.nave = int(spiltline[3])
+				myBeam.prm.noisesky = float(spiltline[4])
+				myBeam.prm.rsep = int(spiltline[5])
+				myBeam.prm.nrang = int(spiltline[6])
+				myBeam.prm.frang = int(spiltline[7])
+				myBeam.prm.noisesearch = float(spiltline[8])
+				myBeam.prm.tfreq = float(spiltline[9])
+				myBeam.fit.slist = splitArray(spiltline[10])
+				myBeam.prm.ifmode = int(spiltline[11])
+				myBeam.fit.v = splitArray(spiltline[12])
+				myBeam.fit.p_l  = splitArray(spiltline[13])
+				myBeam.fit.w_l = splitArray(spiltline[14])
+				myBeam.fit.gflg = splitArray(spiltline[15])
+				self.myBeamList.append(myBeam)
+		f.close()
+	except:
+		print dFilenm,'file doesn"t exist'
+		
+def splitArray(strArr):
+	splitL = strArr.split(',')
+	numArr = []
+	for s in splitL:
+		if '[' in s:
+			s = s[1:len(s)]
+		elif ']' in s:
+			if '\n' in s:
+				s = s[0:len(s)-2]
+			else:
+				s = s[0:len(s)-1]
+		numArr.append(float(s))
+	return numArr
 
-	fov = radFov.fov(site=self.site,rsep=self.site.rsep,\
-        ngates=int(self.nrangs[0])+1,nbeams= int(self.maxbeam[0]),coords='geo') 
-	for i in range(0, int(self.maxbeam[0])):
-		self.verts.append([])
-		for k in range(0,int(self.nrangs[0])):
-			x1,y1 = fov.lonFull[i,k],fov.latFull[i,k]
-			x2,y2 = fov.lonFull[i,k+1],fov.latFull[i,k+1]
-			x3,y3 = fov.lonFull[i+1,k+1],fov.latFull[i+1,k+1]
-			x4,y4 = fov.lonFull[i+1,k],fov.latFull[i+1,k]
-			#save the polygon vertices
-			self.verts[i].append(((x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)))
+def createDt(strDt):
+	splitL = strDt.split('(')
+	splitD = splitL[1].split(',')
+	mt = splitD[5]
+	dt = datetime.datetime(int(splitD[0]),int(splitD[1]),int(splitD[2]),\
+		int(splitD[3]),int(splitD[4]),int(mt[0:len(mt)-1]))
+	return dt
+		
 	
-
-
-
+	
 run()
 

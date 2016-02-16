@@ -11,7 +11,7 @@ from fgpJS import plotFgpJson
 import matplotlib.pyplot as plot
 import sys,datetime,pytz
 sys.path.append('~/davitpy')
-from utils import plotUtils
+from utils import plotUtils,mapObj
 import time
 from pydarn.proc.music import getDataSet
 
@@ -33,13 +33,13 @@ class geoThread(Thread):
 	def run(self):
 		
 		while not self.data.empty():
-			myScan = self.data.get(True, 1)
+			myScan = self.data.get(True, 0.1)
 			for mb in myScan:
 				myBeam = beamData()
 				myBeam = mb
 				break
 		while not self.stoprequest.isSet():
-			time.sleep(0.5)
+			time.sleep(1)
 			timeNow = datetime.datetime.utcnow()
 			myBeam.time = myBeam.time.replace(tzinfo=None)	
 			tdif = timeNow - myBeam.time
@@ -59,8 +59,31 @@ class geoThread(Thread):
 			while not self.data.empty():
 				myBeam = beamData()
 				myBeam = self.data.get()
-				myScan.pop(myBeam.bmnum)
-				myScan.insert(myBeam.bmnum,myBeam)
+				if myBeam.bmnum >= len(myScan):
+					bmnum = len(myScan)
+					while bmnum > len(myScan):
+						tmp_myBeam = beamData()
+						tmp_myBeam.bmnum = bmnum
+						tmp_myBeam.time = timeNow.replace(tzinfo=None)
+						myScan.append(tmp_myBeam)
+						print tmp_myBeam
+						bmnum += 1
+					myScan.append(myBeam)
+					self.parent.maxbeam[0] = myBeam.bmnum+1
+					self.parent.llcrnrlon,self.parent.llcrnrlat,\
+					self.parent.urcrnrlon,self.parent.urcrnrlat,\
+					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
+					self.parent.dist = plotUtils.geoLoc(self.parent.site,\
+						int(self.parent.nrangs[0]),self.parent.site.rsep,\
+						int(self.parent.maxbeam[0]))
+					self.parent.myMap = mapObj(coords='geo', projection='stere',\
+						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
+						llcrnrlon=self.parent.llcrnrlon, llcrnrlat=self.parent.llcrnrlat,\
+						urcrnrlon=self.parent.urcrnrlon,urcrnrlat=self.parent.urcrnrlat,\
+						grid =True,lineColor='0.75')
+				else:
+					myScan.pop(myBeam.bmnum)
+					myScan.insert(myBeam.bmnum,myBeam)
 			
 		
 			try:
@@ -94,14 +117,12 @@ class geoThread(Thread):
 					backgColor = self.parent.geo['backgColor'],
 					gridColor = self.parent.geo['gridColor'],
 					filepath = self.parent.filepath[0],
-					totVerts = self.parent.verts,
 					myMap = self.parent.myMap)
 			except:
 				logging.error('geographic plot missing info')
 				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
-				
-			logging.info('Updated Geographic Plot')
 			for i in range(len(self.parent.fan['figure'])):
+				time.sleep(1)
 				try:
 					self.parent.fan['figure'][i].clf()
 					self.parent.fan['figure'][i]=plotFgpJson(myScan,self.parent.rad,
@@ -118,8 +139,6 @@ class geoThread(Thread):
 				except:
 					logging.error('fan plot missing info')
 					logging.error('Fan Figure: %s'%(sys.exc_info()[0]))
-				logging.info('Updated Fan Plot')
-				
 	def join(self, timeout=None):
 		self.stoprequest.set()
 		logging.info("Closing geoThread")
@@ -135,10 +154,12 @@ class timeThread(Thread):
 	
 	def run(self):
 		myBeamList = scanData()
+		while not self.data.empty():
+			myBeamList = self.data.get(True, 0.01)
 		while not self.stoprequest.isSet():
 			time.sleep(20)
 			while not self.data.empty():
-				tmpB = self.data.get(True, 20)
+				tmpB = self.data.get(True, 0.01)
 				if tmpB == 0:
 					try:
 						reactor.stop()
@@ -152,9 +173,15 @@ class timeThread(Thread):
 					myBeam = beamData()
 					myBeam = tmpB
 				timeNow = datetime.datetime.utcnow()
-				myBeam.time = myBeam.time.replace(tzinfo=None)
-				tdif = timeNow - myBeam.time
-
+				dFilenm = 'data/'+`timeNow.month`+`timeNow.day`+`timeNow.year`+'_'+self.parent.rad
+				with open(dFilenm,'a+') as f:
+					fLine = `myBeam.stid`+';'+`myBeam.time`+';'+`myBeam.cp`+';'+`myBeam.prm.nave`+\
+						';'+`myBeam.prm.noisesky`+';'+`myBeam.prm.rsep`+';'+`myBeam.prm.nrang`+\
+						';'+`myBeam.prm.frang`+';'+`myBeam.prm.noisesearch`+';'+`myBeam.prm.tfreq`+\
+						';'+`myBeam.fit.slist`+';'+`myBeam.prm.ifmode`+';'+`myBeam.fit.v`+';'+\
+						`myBeam.fit.p_l`+';'+`myBeam.fit.w_l`+';'+`myBeam.fit.gflg`+'\n'
+					f.write(fLine)
+				f.close()
 				myBeamList.append(myBeam)
 				if len(myBeamList)>2:
 					try:
@@ -167,12 +194,12 @@ class timeThread(Thread):
 								bmnum = int(self.parent.beams[0]),
 								figure = self.parent.time['figure'],
 								rTime = myBeam.time,
-								title = self.parent.names[0])
+								title = self.parent.names[0],
+								myFov = self.parent.fovs)
 						self.parent.time['figure'].savefig("%stime" % (self.parent.filepath[0]))
 					except:
 						logging.error('time plot missing info')
 						logging.error('Time Figure: %s' %(sys.exc_info()[0]))
-					logging.info('Updated Time Plot')
 	def join(self, timeout=None):
 		self.stoprequest.set()
 		logging.info("Closing timeThread")
@@ -211,8 +238,6 @@ def processMsg(self):
     self.gque.put(self.parent.myBeam)
     if self.parent.myBeam.bmnum == int(self.parent.beams[0]):
         self.tque.put(self.parent.myBeam)
-    if self.parent.i == 160:
-    	self.gt.join()
     logging.info("Proccessing packet: %s" % (str(self.parent.i)))
     self.parent.i = self.parent.i+1
     self.endP = True
@@ -220,7 +245,7 @@ def processMsg(self):
 
 def incommingData(self,data):	
     #As soon as any data is received, write it back.
-
+    time.sleep(0.5)
     self.find = str.find
     start_count = self.data.count('["{')
     if start_count != 0:
@@ -367,6 +392,7 @@ def serverCon(self):
 	f.gque = Queue()
 	f.gque.put(self.myScan)
 	f.tque = Queue()
+	f.tque.put(self.myBeamList)
 	f.tt = timeThread(self,f.tque)
 	f.gt = geoThread(self,f.gque,f.tque)
 	f.gt.start()
@@ -388,25 +414,5 @@ def silentRemove(self,filename):
 		fanFig.text(0.5,0.5,'Lost Connection',backgroundcolor='r',
 			size='x-large',style='oblique',ha='center',va='center')
 		fanFig.savefig("%s%s" % (self.parent.filepath[0],filename))
-
-#creates a new data set
-def createData(self):
-    self.myScan = scanData()
-    #only called near midnight contains time plot data
-    for i in range(0, int(self.parent.maxbeam[0])):
-        myBeam = beamData()
-        today = datetime.datetime.utcnow()
-        today = today.replace(tzinfo=pytz.utc)	
-        myBeam.time= today
-        myBeam.bmnum = i
-        myBeam.prm.nrang = int(self.parent.nrangs[0])
-        if i == 0:
-            self.myBeam = myBeam
-        self.myScan.append(myBeam)
-    self.parent.site.tval = datetime.datetime.utcnow()
-    self.parent.llcrnrlon,self.parent.llcrnrlat,self.parent.urcrnrlon,self.parent.urcrnrlat,self.parent.lon_0, \
-    self.parent.lat_0, self.parent.fovs,self.parent.dist = plotUtils.geoLoc(self.parent.site,
-            int(self.parent.nrangs[0]),self.parent.site.rsep,
-            int(self.parent.maxbeam[0]))
 
 

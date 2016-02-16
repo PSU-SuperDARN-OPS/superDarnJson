@@ -33,7 +33,7 @@
 """
 
 
-import numpy,logging
+import numpy,logging,time
 import matplotlib.lines as lines
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from matplotlib.dates import date2num, SecondLocator,num2date,DateFormatter
@@ -49,7 +49,7 @@ def plotRti(myBeamList,rad,bmnum=7,
 			params=['velocity','power','width'], scales=[],
 			channel='a',coords='gate',colors='lasse',yrng=-1,
 			gsct=False,lowGray=False, filtered=False,tFreqBands=[],
-			figure=None,xtick_size=9,ytick_size=9,
+			figure=None,xtick_size=9,ytick_size=9,myFov = None,
 			xticks=None,axvlines=None,plotTerminator=False,rTime = None,title=None):
   """create an rti plot for a secified radar and time period
 
@@ -157,6 +157,7 @@ def plotRti(myBeamList,rad,bmnum=7,
   for myBeam in myBeamList:
 	if myBeam.prm.tfreq >= tbands[i][0] and myBeam.prm.tfreq <= tbands[i][1]:
 	  ids = myBeam.stid
+	  time.sleep(0.1)
 	  times[i].append(myBeam.time)
 	  cpid[i].append(myBeam.cp)
 	  nave[i].append(myBeam.prm.nave)
@@ -185,6 +186,7 @@ def plotRti(myBeamList,rad,bmnum=7,
 
     #get/create a figure
     rtiFig = figure
+    time.sleep(0.01)
         
     #give the plot a title
     rtiTitle(rtiFig,rTime,title,rad,bmnum)
@@ -204,11 +206,12 @@ def plotRti(myBeamList,rad,bmnum=7,
       elif(params[p] == 'width'): pArr = wid[fplot]
       elif(params[p] == 'elevation'): pArr = elev[fplot]
       elif(params[p] == 'phi0'): pArr = phi0[fplot]
+      time.sleep(0.1)
       pos = [.1,figtop-figheight*(p+1)+.02,.76,figheight-.02]
       
       #draw the axis
       ax = drawAxes(rtiFig,times[fplot],rad,cpid[fplot],bmnum,nrang[fplot],frang[fplot],rsep[fplot],ids,p==len(params)-1,yrng=yrng,coords=coords,\
-                    pos=pos,xtick_size=xtick_size,ytick_size=ytick_size,xticks=xticks,axvlines=axvlines)
+                    pos=pos,xtick_size=xtick_size,ytick_size=ytick_size,xticks=xticks,axvlines=axvlines, myFov = myFov)
   
       
       if(pArr == []): continue
@@ -241,8 +244,9 @@ def plotRti(myBeamList,rad,bmnum=7,
               data[tcnt][slist[fplot][i][j]] = -100000.
   
       if (coords != 'gate' and coords != 'rng') or plotTerminator == True:
-        site    = RadarPos(ids)
-        myFov   = radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
+      	if myFov is None:
+			site    = RadarPos(ids)
+			myFov   = radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
         myLat   = myFov.latCenter[bmnum]
         myLon   = myFov.lonCenter[bmnum]
           
@@ -323,7 +327,7 @@ def plotRti(myBeamList,rad,bmnum=7,
   
 def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
 	coords='gate',pos=[.1,.05,.76,.72],xtick_size=9,\
-	ytick_size=9,xticks=None,axvlines=None):
+	ytick_size=9,xticks=None,axvlines=None, myFov = None):
   """draws empty axes for an rti plot
 
   **Args**:
@@ -374,8 +378,9 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
         if(cpid[i] == oldCpid): continue
         oldCpid = cpid[i]
         if(coords == 'geo' or coords == 'mag'):
-          site = RadarPos(ids)
-          myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
+          if myFov is None:
+			  site = RadarPos(ids)
+			  myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
           if(myFov.latFull[bmnum].max() > ymax): ymax = myFov.latFull[bmnum].max()
           if(myFov.latFull[bmnum].min() < ymin): ymin = myFov.latFull[bmnum].min()
         else:

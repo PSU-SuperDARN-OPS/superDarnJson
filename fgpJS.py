@@ -40,7 +40,6 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from utils.timeUtils import *
 from pydarn.sdio import *
 
-
 def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
               scales=[],channel='a',coords='gate',colors='lasse',yrng=-1,gsct=False,lowGray=False, \
               filtered=False, tFreqBands=[], myFile=None,figure=None,xtick_size=9,

@@ -132,9 +132,9 @@ def createjson(scalars, vectors):
 
 def main():
     HOST = 'superdarn.gi.alaska.edu'
-    PORT = 6023
+    PORT = 6024
     timeout = False
-    PORT_JSON_SERVE = 6040
+    PORT_JSON_SERVE = 6041
     
     s = None
     s_json = None

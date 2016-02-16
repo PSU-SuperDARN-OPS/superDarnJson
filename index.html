@@ -32,7 +32,7 @@ function popUp() {
 	var gType = document.getElementsByName("gType");
 	var rType = AKrad.options[AKrad.selectedIndex].value;
 	
-	var url = "";
+	var url = "gui/";
 	for(i = 0; i < graph.length; i++){
 		if(graph[i].checked){
 			if(graph[i].value == "time"){
@@ -84,6 +84,10 @@ function popUp() {
 		<th>
 			<select id="AlaskaRadar">
 			<option value="mcmb">McMurdo B</option>
+			<option value="ade">Adak East</option>
+			<option value="adw">Adak West</option>
+			<option value="koc">Kodiak C</option>
+			<option value="kod">Kodiak D</option>
 			</select>
 		</th>
 	</tr>
