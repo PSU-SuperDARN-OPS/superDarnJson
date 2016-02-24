@@ -1,6 +1,6 @@
 #!/bin/sh
 SERVICE='basic_gui.py'
-RADAR='koc'
+RADAR='kodc'
 if ps ax | grep -v grep | grep $SERVICE | grep $RADAR > /dev/null
 then
     cd /var/www/radar/html/java/images/gui/errlog/
@@ -19,7 +19,7 @@ else
     pkill -9 -f pydmap_read_koc.py
     cd /var/www/radar/html/java/images/gui/
     python2 pydmap_read_koc.py &
-    python2 basic_gui.py hosts=localhost ports=6043 maxbeam=16 nrangs=75 names="Kodiak C" beams=8 rad=kod filepath="koc/"
+    python2 basic_gui.py hosts=localhost ports=6043 maxbeam=16 nrangs=75 names="Kodiak C" beams=8 channels=c rad=kod filepath="kodc/"
     
 fi
 

@@ -132,16 +132,15 @@ def createjson(scalars, vectors):
 
 def main():
     HOST = 'superdarn.gi.alaska.edu'
-    PORT = 6031
+    PORT = 6033
     timeout = False
-    PORT_JSON_SERVE = 6040
+    PORT_JSON_SERVE = 6045
     
     s = None
     s_json = None
     json_conn = None
     while True:
         try:
-			
 			s_json = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s_json.bind(('', PORT_JSON_SERVE))
 			s_json.listen(10)

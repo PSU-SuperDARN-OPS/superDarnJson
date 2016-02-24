@@ -28,6 +28,9 @@ class geoThread(Thread):
 		self.parent = parent
 		self.data = data
 		self.tq = timeQue
+		self.oldCpid = -9999999999
+		self.maxgates = int(self.parent.nrangs[0])
+		
 		self.stoprequest = Event()
 	
 	def run(self):
@@ -59,9 +62,27 @@ class geoThread(Thread):
 			while not self.data.empty():
 				myBeam = beamData()
 				myBeam = self.data.get()
+				if myBeam.cp != self.oldCpid:
+					self.oldCpid = myBeam.cp
+					self.parent.maxbm = self.parent.maxbeam[0]
+				if myBeam.prm.nrang != self.maxgates:
+					print 'Changing Gates'
+					self.maxgates = myBeam.prm.nrang
+					self.parent.llcrnrlon,self.parent.llcrnrlat,\
+					self.parent.urcrnrlon,self.parent.urcrnrlat,\
+					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
+					self.parent.dist, self.parent.height,self.parent.width = plotUtils.geoLoc(self.parent.site,\
+						self.maxgates,self.parent.site.rsep,\
+						int(self.parent.maxbm))
+					self.parent.myMap = mapObj(coords='geo', projection='stere',\
+						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
+						llcrnrlon=self.parent.llcrnrlon, llcrnrlat=self.parent.llcrnrlat,\
+						urcrnrlon=self.parent.urcrnrlon,urcrnrlat=self.parent.urcrnrlat,\
+						grid =True,lineColor='0.75')
 				if myBeam.bmnum >= len(myScan):
 					bmnum = len(myScan)
 					while bmnum > len(myScan):
+						time.sleep(0.1)
 						tmp_myBeam = beamData()
 						tmp_myBeam.bmnum = bmnum
 						tmp_myBeam.time = timeNow.replace(tzinfo=None)
@@ -69,13 +90,13 @@ class geoThread(Thread):
 						print tmp_myBeam
 						bmnum += 1
 					myScan.append(myBeam)
-					self.parent.maxbeam[0] = myBeam.bmnum+1
+					self.parent.maxbm = myBeam.bmnum+1
 					self.parent.llcrnrlon,self.parent.llcrnrlat,\
 					self.parent.urcrnrlon,self.parent.urcrnrlat,\
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
-					self.parent.dist = plotUtils.geoLoc(self.parent.site,\
-						int(self.parent.nrangs[0]),self.parent.site.rsep,\
-						int(self.parent.maxbeam[0]))
+					self.parent.dist, self.parent.height,self.parent.width = plotUtils.geoLoc(self.parent.site,\
+						self.maxgates,self.parent.site.rsep,\
+						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
 						llcrnrlon=self.parent.llcrnrlon, llcrnrlat=self.parent.llcrnrlat,\
@@ -91,8 +112,8 @@ class geoThread(Thread):
 					fovs = self.parent.fovs,
 					params=self.parent.geo['param'],
 					gsct=self.parent.geo['gsct'], 
-					maxbeams = int(self.parent.maxbeam[0]),
-					maxgates=int(self.parent.nrangs[0]),	
+					maxbeams = int(self.parent.maxbm),
+					maxgates=self.maxgates,	
 					scales=self.parent.geo['sc'],
 					drawEdge = self.parent.geo['drawEdge'], 
 					myFigs = self.parent.geo['figure'],
@@ -151,6 +172,7 @@ class timeThread(Thread):
 		self.parent = parent
 		self.data = data
 		self.stoprequest = Event()
+		self.oldDate = self.parent.day
 	
 	def run(self):
 		myBeamList = scanData()
@@ -158,6 +180,7 @@ class timeThread(Thread):
 			myBeamList = self.data.get(True, 0.01)
 		while not self.stoprequest.isSet():
 			time.sleep(20)
+
 			while not self.data.empty():
 				tmpB = self.data.get(True, 0.01)
 				if tmpB == 0:
@@ -173,7 +196,11 @@ class timeThread(Thread):
 					myBeam = beamData()
 					myBeam = tmpB
 				timeNow = datetime.datetime.utcnow()
-				dFilenm = 'data/'+`timeNow.month`+`timeNow.day`+`timeNow.year`+'_'+self.parent.rad
+				if self.oldDate != timeNow.day:
+					myBeamList = scanData()
+					self.oldDate = timeNow.day
+				dFilenm = 'data/'+`timeNow.month`+`timeNow.day`+`timeNow.year`+'_'+self.parent.rad+self.parent.channels[0]
+				
 				with open(dFilenm,'a+') as f:
 					fLine = `myBeam.stid`+';'+`myBeam.time`+';'+`myBeam.cp`+';'+`myBeam.prm.nave`+\
 						';'+`myBeam.prm.noisesky`+';'+`myBeam.prm.rsep`+';'+`myBeam.prm.nrang`+\
@@ -384,8 +411,8 @@ class EchoFactory(ClientFactory):
 
 def serverCon(self):
 	t_date = datetime.date.today()
-	logging.basicConfig(filename="errlog/err_%s_%s"\
-		% (self.rad,t_date.strftime('%Y%m%d')), level=logging.DEBUG, \
+	logging.basicConfig(filename="errlog/err_%s%s_%s"\
+		% (self.rad,self.channels[0],t_date.strftime('%Y%m%d')), level=logging.DEBUG, \
 		format='%(asctime)s %(message)s')
 	f = EchoFactory(self)
 	f.parent = self

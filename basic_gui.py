@@ -18,12 +18,15 @@ and creates initial datasets on start
 class parseStart:
 	
 	def __init__(self,*args,**kwargs):
+		self.channels = []
 		parseArgs(self)
-
-					
+		if len(self.channels) == 0:
+			self.channels.append('')
+		
 		
 		self.i = 0
 		self.rad = self.rad[0]
+		self.maxbm = self.maxbeam[0]
 		self.fan = None
 		self.geo = None
 		self.status = None
@@ -82,7 +85,6 @@ def parseArgs(self):
 	for argL in sys.argv:
 		indEq = argL.find('=')
 		indEq +=1
-
 		if 'hosts' in argL:
 			self.hosts = argL[indEq:].split(',')
 		elif 'ports' in argL:
@@ -128,17 +130,20 @@ def createData(self):
 		self.myScan.append(myBeam)
 	self.site = RadarPos(code = self.rad)
 	self.site.tval = datetime.datetime.utcnow()
-	self.llcrnrlon,self.llcrnrlat,self.urcrnrlon,self.urcrnrlat,self.lon_0,self.lat_0, self.fovs,self.dist = plotUtils.geoLoc(self.site,
+	self.llcrnrlon,self.llcrnrlat,self.urcrnrlon,self.urcrnrlat,\
+	self.lon_0,self.lat_0, self.fovs,self.dist,self.height,self.width = \
+	plotUtils.geoLoc(self.site,
 		int(self.nrangs[0]),self.site.rsep,
 		int(self.maxbeam[0]))
 	self.myMap = mapObj(coords='geo', projection='stere', lat_0=self.lat_0, lon_0=self.lon_0,
-											 llcrnrlon=self.llcrnrlon, llcrnrlat=self.llcrnrlat, urcrnrlon=self.urcrnrlon,
-											 urcrnrlat=self.urcrnrlat,grid =True,
-											 lineColor='0.75')
+												 llcrnrlon=self.llcrnrlon, llcrnrlat=self.llcrnrlat, urcrnrlon=self.urcrnrlon,
+												 urcrnrlat=self.urcrnrlat,grid =True,
+												 lineColor='0.75')
 
 def loadData(self):
 	timeNow = datetime.datetime.utcnow()
-	dFilenm = 'data/'+`timeNow.month`+`timeNow.day`+`timeNow.year`+'_'+self.rad
+	dFilenm = 'data/'+`timeNow.month`+`timeNow.day`+`timeNow.year`+'_'+self.rad+self.channels[0]
+	self.day = timeNow.day
 	try:
 		with open(dFilenm,'r+') as f:
 			for line in f:

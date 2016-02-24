@@ -151,7 +151,7 @@ def main():
 			while True:
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				s.connect((HOST, PORT))
-				s.settimeout(60.0)
+				s.settimeout(5.0)
 				while not timeout:
 					scalars, vectors, timeout = readPacket(s)
 					json_str = createjson(scalars, vectors)

@@ -28,7 +28,7 @@
     * :func:`pydarn.plotting.fan.overlayFan`
 """
     
-import numpy,math,datetime,time
+import numpy,math,datetime,time,gme
 from matplotlib.collections import PolyCollection,LineCollection
 from utils.timeUtils import *
 from utils.plotUtils import genCmap
@@ -91,7 +91,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
     """
 
     
-    import gme
+    
 
     #check the inputs
     assert(isinstance(rad,list)),"error, rad must be a list, eg ['bks'] or ['bks','fhe']"
@@ -158,8 +158,9 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		continentColor = 'w'
 		merColor = '0.75'
 		cTime = datetime.datetime.utcnow()
+
 		overlayFov(myMap,site = site,fovColor=backgColor,\
-			lineColor=gridColor, dateTime=cTime, fovObj=fovs[0],radFov = fovs) 
+			lineColor=gridColor, dateTime=cTime, fovObj=fovs[0]) 
 		intensities, pcoll = overlayFan(myScan,myMap,myFig,param,coords,\
 			gsct=gsct,site=site,fov=fovs[0], fill=fill,velscl=velscl,\
 			dist=dist,cmap=cmap,norm=norm,)

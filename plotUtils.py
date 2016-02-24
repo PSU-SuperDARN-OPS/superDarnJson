@@ -134,8 +134,10 @@ class mapObj(basemap.Basemap):
         for ix,iy,ip in zip(x,y,parallels):
           if not self.xmin <= ix <= self.xmax: continue
           if not self.ymin <= iy <= self.ymax: continue
+          '''
           _ = text(ix, iy, r"{:3.0f}$^\circ$".format(ip), 
               rotation=rotate_label, va='center', ha='center', zorder=10, color=lineColor)
+              '''
       # label meridians on bottom and left
       meridians = np.arange(-180.,181.,20.)
       if gridLabels: 
@@ -594,6 +596,7 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	#to Cartesian, taking the mean of each coordinate and then converting back
 	#to get lat_0 and lon_0
 	lonC,latC = (numpy.array(lonC)+360.)%360.0,numpy.array(latC)
+
 	xs=numpy.cos(numpy.deg2rad(latC))*numpy.cos(numpy.deg2rad(lonC))
 	ys=numpy.cos(numpy.deg2rad(latC))*numpy.sin(numpy.deg2rad(lonC))
 	zs=numpy.sin(numpy.deg2rad(latC))
@@ -602,6 +605,7 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	zc=numpy.mean(zs)
 	lon_0=numpy.rad2deg(numpy.arctan2(yc,xc))
 	lat_0=numpy.rad2deg(numpy.arctan2(zc,numpy.sqrt(xc*xc+yc*yc)))
+
 	
 	#Now do some stuff in map projection coords to get necessary width and height of map
 	#and also figure out the corners of the map
@@ -610,15 +614,27 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	tmpmap = utils.mapObj(coords='geo',projection='stere', width=10.0**3, 
 												height=10.0**3, lat_0=lat_0, lon_0=lon_0)
 	x,y = tmpmap(lonFull,latFull)
+	xsite,ysite = tmpmap(site.geolon,site.geolat)
 	minx = x.min()*1.05     #since we don't want the map to cut off labels or
 	miny = y.min()*1.05     #FOVs of the radars we should alter the extrema a bit.
 	maxx = x.max()*1.05
 	maxy = y.max()*1.05
 	width = (maxx-minx)
 	height = (maxy-miny)
-	llcrnrlon,llcrnrlat = tmpmap(minx,miny,inverse=True)
-	urcrnrlon,urcrnrlat = tmpmap(maxx,maxy,inverse=True)
-	
+	if numpy.abs(minx-xsite)< numpy.abs(maxx-xsite):
+		if numpy.abs(miny-ysite) <numpy.abs(maxy-ysite):
+			llcrnrlon,llcrnrlat = tmpmap(minx,miny,inverse=True)
+			urcrnrlon,urcrnrlat = tmpmap(maxx,maxy,inverse=True)
+		else:
+			llcrnrlon,llcrnrlat = tmpmap(minx,maxy,inverse=True)
+			urcrnrlon,urcrnrlat = tmpmap(maxx,miny,inverse=True)
+	else:
+		if numpy.abs(miny-ysite) <numpy.abs(maxy-ysite):
+			llcrnrlon,llcrnrlat = tmpmap(minx,miny,inverse=True)
+			urcrnrlon,urcrnrlat = tmpmap(maxx,maxy,inverse=True)
+		else:
+			llcrnrlon,llcrnrlat = tmpmap(minx,maxy,inverse=True)
+			urcrnrlon,urcrnrlat = tmpmap(maxx,miny,inverse=True)
 	dist = width/50.
 	cTime = datetime.datetime.utcnow()
 
@@ -633,7 +649,7 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	myMap.fillcontinents(color=continentColor, lake_color=waterColor)
 	myFig.savefig('/var/www/html/java/mcmb/map')
 	'''
-	return llcrnrlon,llcrnrlat,urcrnrlon,urcrnrlat,lon_0,lat_0,fovs,dist
+	return llcrnrlon,llcrnrlat,urcrnrlon,urcrnrlat,lon_0,lat_0,fovs,dist,width,height
 
 
 ################################################################################

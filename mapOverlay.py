@@ -93,7 +93,7 @@ def overlayRadar(Basemap, codes=None, ids=None, names=None, dateTime=None,
 		if not hasattr(Basemap, 'coords'): 
 			x,y = Basemap(site.geolon, site.geolat)
 		else:
-			x,y = Basemap(site.geolon, site.geolat, coords='geo')
+			x,y = Basemap(site.geolon, site.geolat,coords='geo')
 		if not Basemap.xmin <= x <= Basemap.xmax: continue
 		if not Basemap.ymin <= y <= Basemap.ymax: continue
 		# Plot radar position

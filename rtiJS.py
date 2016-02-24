@@ -157,7 +157,6 @@ def plotRti(myBeamList,rad,bmnum=7,
   for myBeam in myBeamList:
 	if myBeam.prm.tfreq >= tbands[i][0] and myBeam.prm.tfreq <= tbands[i][1]:
 	  ids = myBeam.stid
-	  time.sleep(0.1)
 	  times[i].append(myBeam.time)
 	  cpid[i].append(myBeam.cp)
 	  nave[i].append(myBeam.prm.nave)
@@ -186,7 +185,6 @@ def plotRti(myBeamList,rad,bmnum=7,
 
     #get/create a figure
     rtiFig = figure
-    time.sleep(0.01)
         
     #give the plot a title
     rtiTitle(rtiFig,rTime,title,rad,bmnum)
@@ -292,7 +290,6 @@ def plotRti(myBeamList,rad,bmnum=7,
       cmap,norm,bounds = plotUtils.genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
       
       pcoll = ax.pcolormesh(X, Y, data[:tcnt][:].T, lw=0.01,edgecolors='None',alpha=1,lod=True,cmap=cmap,norm=norm)
-  
       cb = drawCB(rtiFig,pcoll,cmap,norm,map=0,pos=[pos[0]+pos[2]+.02, pos[1], 0.02, pos[3]])
       
       l = []
