@@ -591,6 +591,15 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 		latC.append(myFov.latFull[b][k])
 		lonC.append(myFov.lonFull[b][k])
 
+		fEdgeLat = myFov.latFull[0][k]
+		fEdgeLon = myFov.lonFull[0][k]
+		lEdgeLat = myFov.latFull[b][k]
+		lEdgeLon = myFov.lonFull[b][k]
+		cEdgeLat = myFov.latFull[int(b/2)][k]
+		cEdgeLon = myFov.lonFull[int(b/2)][k]
+
+	lat_0 = myFov.latFull[int(b/2)][int(k/2)]
+	lon_0 = myFov.lonFull[int(b/2)][int(k/2)]
 	#Now that we have 3 points from the FOVs of the radars, calculate the lat,lon pair
 	#to center the map on. We can simply do this by converting from Spherical coords
 	#to Cartesian, taking the mean of each coordinate and then converting back
@@ -603,8 +612,8 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	xc=numpy.mean(xs)
 	yc=numpy.mean(ys)
 	zc=numpy.mean(zs)
-	lon_0=numpy.rad2deg(numpy.arctan2(yc,xc))
-	lat_0=numpy.rad2deg(numpy.arctan2(zc,numpy.sqrt(xc*xc+yc*yc)))
+	#lon_0=numpy.rad2deg(numpy.arctan2(yc,xc))
+	#lat_0=numpy.rad2deg(numpy.arctan2(zc,numpy.sqrt(xc*xc+yc*yc)))
 
 	
 	#Now do some stuff in map projection coords to get necessary width and height of map
@@ -615,12 +624,31 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 												height=10.0**3, lat_0=lat_0, lon_0=lon_0)
 	x,y = tmpmap(lonFull,latFull)
 	xsite,ysite = tmpmap(site.geolon,site.geolat)
+	fex,fey = tmpmap(fEdgeLon,fEdgeLat)
+	lex,ley = tmpmap(lEdgeLon,lEdgeLat)
+	cex,cey = tmpmap(cEdgeLon,cEdgeLat)
+	bwidth = numpy.sqrt((fex-lex)**2+(fey-ley)**2)
+	leWidth = numpy.sqrt((fex-xsite)**2+(fey-ysite)**2)
+	riWidth = numpy.sqrt((xsite-lex)**2+(ysite-ley)**2)
+	if bwidth <leWidth:
+		if leWidth < riWidth:
+			width = riWidth
+		else:
+			width = leWidth
+	elif bwidth <riWidth:
+		if riWidth < leWidth:
+			width = leWidth
+		else:
+			width = riWidth
+	else:
+		width = bwidth
+	height = numpy.sqrt((cex-xsite)**2+(cey-ysite)**2)
 	minx = x.min()*1.05     #since we don't want the map to cut off labels or
 	miny = y.min()*1.05     #FOVs of the radars we should alter the extrema a bit.
 	maxx = x.max()*1.05
 	maxy = y.max()*1.05
-	width = (maxx-minx)
-	height = (maxy-miny)
+	#width = (maxx-minx)
+	#height = (maxy-miny)
 	if numpy.abs(minx-xsite)< numpy.abs(maxx-xsite):
 		if numpy.abs(miny-ysite) <numpy.abs(maxy-ysite):
 			llcrnrlon,llcrnrlat = tmpmap(minx,miny,inverse=True)

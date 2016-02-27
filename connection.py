@@ -76,8 +76,7 @@ class geoThread(Thread):
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
-						llcrnrlon=self.parent.llcrnrlon, llcrnrlat=self.parent.llcrnrlat,\
-						urcrnrlon=self.parent.urcrnrlon,urcrnrlat=self.parent.urcrnrlat,\
+						width= self.width*1.2,height = self.height*1.2,\
 						grid =True,lineColor='0.75')
 				if myBeam.bmnum >= len(myScan):
 					bmnum = len(myScan)
@@ -99,9 +98,8 @@ class geoThread(Thread):
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
-						llcrnrlon=self.parent.llcrnrlon, llcrnrlat=self.parent.llcrnrlat,\
-						urcrnrlon=self.parent.urcrnrlon,urcrnrlat=self.parent.urcrnrlat,\
-						grid =True,lineColor='0.75')
+						width= self.width*1.2,height = self.height*1.2,\
+						anchor = 'N',grid =True,lineColor='0.75')
 				else:
 					myScan.pop(myBeam.bmnum)
 					myScan.insert(myBeam.bmnum,myBeam)
@@ -142,6 +140,7 @@ class geoThread(Thread):
 			except:
 				logging.error('geographic plot missing info')
 				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
+
 			for i in range(len(self.parent.fan['figure'])):
 				time.sleep(1)
 				try:
@@ -160,6 +159,7 @@ class geoThread(Thread):
 				except:
 					logging.error('fan plot missing info')
 					logging.error('Fan Figure: %s'%(sys.exc_info()[0]))
+
 	def join(self, timeout=None):
 		self.stoprequest.set()
 		logging.info("Closing geoThread")

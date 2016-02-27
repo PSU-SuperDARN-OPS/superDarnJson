@@ -323,6 +323,7 @@ def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
                 x = PolyCollection(numpy.array(verts)[numpy.where(numpy.array(gs_flg)==1)],
                     facecolors='.3',linewidths=0,zorder=5,alpha=alpha)
                 myFig.gca().add_collection(x, autolim=True)
+
             pcoll = PolyCollection(numpy.array(verts)[inx],
                 edgecolors='face',linewidths=0,closed=False,zorder=4,
                 alpha=alpha,cmap=cmap,norm=norm)

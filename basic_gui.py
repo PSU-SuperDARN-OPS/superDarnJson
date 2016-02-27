@@ -136,8 +136,7 @@ def createData(self):
 		int(self.nrangs[0]),self.site.rsep,
 		int(self.maxbeam[0]))
 	self.myMap = mapObj(coords='geo', projection='stere', lat_0=self.lat_0, lon_0=self.lon_0,
-												 llcrnrlon=self.llcrnrlon, llcrnrlat=self.llcrnrlat, urcrnrlon=self.urcrnrlon,
-												 urcrnrlat=self.urcrnrlat,grid =True,
+												 width= self.width*1.2,height = self.height*1.2,grid =True,anchor = 'N',
 												 lineColor='0.75')
 
 def loadData(self):
