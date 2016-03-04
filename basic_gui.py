@@ -38,7 +38,7 @@ class parseStart:
 		self.data['drawEdge'] = False
 		self.data['gridColor']='k'
 		self.data['backgColor'] = 'w'
-		self.data['figure'] = 3*[plot.figure(figsize=(11,8.5))]
+		self.data['figure'] = 3*[plot.figure()]
 		self.fan = self.data
 	
 	
@@ -48,7 +48,7 @@ class parseStart:
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
 		self.data['gsct'] = True
 		self.data['drawEdge'] = False
-		self.data['figure'] = plot.figure(figsize=(12,8))
+		self.data['figure'] = plot.figure()
 		self.time = self.data
 		
 	
@@ -65,7 +65,7 @@ class parseStart:
 		self.data['continentColor'] = 'w'
 		self.data['merColor'] = '0.75'
 		self.data['merGrid'] = True
-		self.data['figure'] = 3*[plot.figure(figsize=(12,8))]
+		self.data['figure'] = 3*[plot.figure()]
 		self.geo = self.data
 		createData(self)
 		loadData(self)
@@ -130,7 +130,6 @@ def createData(self):
 		self.myScan.append(myBeam)
 	self.site = RadarPos(code = self.rad)
 	self.site.tval = datetime.datetime.utcnow()
-	self.llcrnrlon,self.llcrnrlat,self.urcrnrlon,self.urcrnrlat,\
 	self.lon_0,self.lat_0, self.fovs,self.dist,self.height,self.width = \
 	plotUtils.geoLoc(self.site,
 		int(self.nrangs[0]),self.site.rsep,

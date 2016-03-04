@@ -295,15 +295,6 @@ def plotRti(myBeamList,rad,bmnum=7,
       l = []
       #define the colorbar labels
       for i in range(0,len(bounds)):
-        if(params[p] == 'phi0'):
-          ln = 4
-          if(bounds[i] == 0): ln = 3
-          elif(bounds[i] < 0): ln = 5
-          l.append(str(bounds[i])[:ln])
-          continue
-        if((i == 0 and params[p] == 'velocity') or i == len(bounds)-1):
-          l.append(' ')
-          continue
         l.append(str(int(bounds[i])))
       cb.ax.set_yticklabels(l)
         
@@ -447,7 +438,7 @@ def plotCpid(myFig,times,cpid,mode,pos=[.1,.77,.76,.05]):
   **Args**:
     * **myFig**: the MPL figure we are plotting on
     * **times**: a list of the times of the beam soundings
-    * **cpid**: a lsit of the cpids of th beam soundings
+    * **cpid**: a lsit of the cpids of the beam soundings
     * **mode**: a list of the ifmode param
     * **[pos]**: position of the panel
   **Returns**:

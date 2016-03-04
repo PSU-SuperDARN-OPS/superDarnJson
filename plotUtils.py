@@ -1,4 +1,4 @@
-# Copyright (C) 2012  VT SuperDARN Lab
+﻿# Copyright (C) 2012  VT SuperDARN Lab
 # Full license can be found in LICENSE.txt
 """
 .. module:: plotUtils
@@ -256,6 +256,7 @@ def genCmap(param, scale, colors='lasse', lowGray=False):
   Written by AJ 20120820
   """
   import matplotlib,numpy
+  import matplotlib.colors as col
   import matplotlib.pyplot as plot
   
   #the MPL colormaps we will be using
@@ -264,81 +265,52 @@ def genCmap(param, scale, colors='lasse', lowGray=False):
   
   #check for a velocity plot
   if(param == 'velocity'):
-    
     #check for what color scale we want to use
-    if(colors == 'aj'):
-      if(not lowGray):
-        #define our discrete colorbar
-        cmap = matplotlib.colors.ListedColormap([cmpr(.142),cmpr(.125),cmpr(.11),cmpr(.1),\
-        cmpr(.175),cmpr(.158),cmj(.32),cmj(.37)])
-      else:
-        cmap = matplotlib.colors.ListedColormap([cmpr(.142),cmpr(.125),cmpr(.11),cmpr(.1),'.6',\
-        cmpr(.175),cmpr(.158),cmj(.32),cmj(.37)])
-    else:
-      if(not lowGray):
-        #define our discrete colorbar
-        cmap = matplotlib.colors.ListedColormap([cmj(.9),cmj(.8),cmj(.7),cmj(.65),\
-        cmpr(.142),cmj(.45),cmj(.3),cmj(.1)])
-      else:
-        cmap = matplotlib.colors.ListedColormap([cmj(.9),cmj(.8),cmj(.7),cmj(.65),'.6',\
-        cmpr(.142),cmj(.45),cmj(.3),cmj(.1)])
-        
+    cdict = {'red': ((0.0, 0.0, 0.0),
+        (0.25, 1.0, 1.0),
+        (0.5, 1.0, 0.0),
+        (0.8, 0.0, 0.0),
+        (1.0, 1.0, 1.0)),
+    'green': ((0.0, 1.0, 1.0),
+        (0.25, 1.0, 1.0),
+        (0.5, 0.0, 0.0),
+        (0.8, 0.7, 0.7),
+        (1.0, 1.0, 1.0)),
+    'blue': ((0.0, 0.0, 0.0),
+        (0.4, 0.0, 0.0),
+        (0.5, 0.0, 1.0),
+        (0.8, 0.7, 0.7),
+        (1.0, 1.0, 1.0))}
+    cmap = col.LinearSegmentedColormap('my_colormap',cdict,256)
+
     #define the boundaries for color assignments
-    bounds = numpy.round(numpy.linspace(scale[0],scale[1],7))
-    if(lowGray):
-      bounds[3] = -15.
-      bounds = numpy.insert(bounds,4,15.)
-    bounds = numpy.insert(bounds,0,-50000.)
+    bounds = numpy.round(numpy.linspace(scale[0],scale[1],11))
     bounds = numpy.append(bounds,50000.)
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+    norm = matplotlib.colors.Normalize(vmin=scale[0], vmax=scale[1])
     
-  elif(param == 'phi0'):
-    #check for what color scale we want to use
-    if(colors == 'aj'):
-      #define our discrete colorbar
-      cmap = matplotlib.colors.ListedColormap([cmpr(.142),cmpr(.125),cmpr(.11),cmpr(.1),\
-      cmpr(.18),cmpr(.16),cmj(.32),cmj(.37)])
-    else:
-      #define our discrete colorbar
-      cmap = matplotlib.colors.ListedColormap([cmj(.9),cmj(.8),cmj(.7),cmj(.65),\
-      cmpr(.142),cmj(.45),cmj(.3),cmj(.1)])
-      
-    #define the boundaries for color assignments
-    bounds = numpy.linspace(scale[0],scale[1],9)
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
-    
-  elif(param == 'grid'):
-    #check what color scale we want to use
-    if(colors == 'aj'):
-      #define our discrete colorbar
-      cmap = matplotlib.colors.ListedColormap([cmpr(.175),cmpr(.17),cmj(.32),cmj(.37),\
-      cmpr(.142),cmpr(.13),cmpr(.11),cmpr(.10)])
-    else:
-      #define our discrete colorbar
-      cmap = matplotlib.colors.ListedColormap([cmj(.1),cmj(.3),cmj(.45),cmpr(.142),\
-      cmj(.65),cmj(.7),cmj(.8),cmj(.9)])
-      
-    #define the boundaries for color assignments
-    bounds = numpy.round(numpy.linspace(scale[0],scale[1],8))
-    bounds = numpy.append(bounds,50000.)
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
-    
+   
   #if its a non-velocity plot
   else:
-    #check what color scale we want to use
-    if(colors == 'aj'):
-      #define our discrete colorbar
-      cmap = matplotlib.colors.ListedColormap([cmpr(.175),cmpr(.158),cmj(.32),cmj(.37),\
-      cmpr(.142),cmpr(.13),cmpr(.11),cmpr(.10)])
-    else:
-      #define our discrete colorbar
-      cmap = matplotlib.colors.ListedColormap([cmj(.1),cmj(.3),cmj(.45),cmpr(.142),\
-      cmj(.65),cmj(.7),cmj(.8),cmj(.9)])
+    cdict = {'red': ((0.0, 0.0, 0.0),
+                 (0.5, 0.0, 0.0),
+                 (0.75, 1.0, 1.0),
+                 (1.0, 1.0, 1.0)),
+        'green':((0.0, 0.0, 0.0),
+                 (0.25, 0.7, 0.7),
+                 (0.5, 1.0, 1.0),
+                 (0.8, 0.7, 0.7),
+                 (1.0, 0.0, 0.0)),
+        'blue': ((0.0, 1.0, 1.0),
+                 (0.2, 0.7, 0.7),
+                 (0.4, 1.0, 1.0),
+                 (0.5, 0.0, 0.0),
+                 (1.0, 0.0, 0.0))}
+    cmap = col.LinearSegmentedColormap('my_colormap',cdict,256)
       
     #define the boundaries for color assignments
-    bounds = numpy.round(numpy.linspace(scale[0],scale[1],8))
+    bounds = numpy.round(numpy.linspace(scale[0],scale[1],11))
     bounds = numpy.append(bounds,50000.)
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+    norm = matplotlib.colors.Normalize(vmin=scale[0], vmax=scale[1])
     
 
   cmap.set_bad('w',1.0)
@@ -378,21 +350,21 @@ def drawCB(fig,coll,cmap,norm,map=False,pos=[0,0,1,1]):
       for c in coll:
         c.set_cmap(cmap)
         c.set_norm(norm)
-        cb = plot.colorbar(c,cax=cax,drawedges=True)
+        cb = plot.colorbar(c,cax=cax)
     else:
       coll.set_cmap(cmap)
       coll.set_norm(norm)
-      cb = plot.colorbar(coll,cax=cax,drawedges=True)
+      cb = plot.colorbar(coll,cax=cax)
   else:
     if(isinstance(coll,list)):
       for c in coll:
         c.set_cmap(cmap)
         c.set_norm(norm)
-        cb = fig.colorbar(c,location='right',drawedges=True)
+        cb = fig.colorbar(c,location='right')
     else:
       coll.set_cmap(cmap)
       coll.set_norm(norm)
-      cb = fig.colorbar(coll,location='right',pad="5%",drawedges=True)
+      cb = fig.colorbar(coll,location='right',pad="5%")
   
   cb.ax.tick_params(axis='y',direction='out')
   return cb
@@ -585,44 +557,25 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 		
 		k=maxgates
 		b=0
-		latC.append(myFov.latFull[b][k])
-		lonC.append(myFov.lonFull[b][k])
-		b=maxbeams
-		latC.append(myFov.latFull[b][k])
-		lonC.append(myFov.lonFull[b][k])
+	latC.append(myFov.latFull[b][k])
+	lonC.append(myFov.lonFull[b][k])
+	b=maxbeams
+	latC.append(myFov.latFull[b][k])
+	lonC.append(myFov.lonFull[b][k])
 
-		fEdgeLat = myFov.latFull[0][k]
-		fEdgeLon = myFov.lonFull[0][k]
-		lEdgeLat = myFov.latFull[b][k]
-		lEdgeLon = myFov.lonFull[b][k]
-		cEdgeLat = myFov.latFull[int(b/2)][k]
-		cEdgeLon = myFov.lonFull[int(b/2)][k]
+	fEdgeLat = myFov.latFull[0][k]
+	fEdgeLon = myFov.lonFull[0][k]
+	lEdgeLat = myFov.latFull[b][k]
+	lEdgeLon = myFov.lonFull[b][k]
+	cEdgeLat = myFov.latFull[int(b/2)][k]
+	cEdgeLon = myFov.lonFull[int(b/2)][k]
 
 	lat_0 = myFov.latFull[int(b/2)][int(k/2)]
 	lon_0 = myFov.lonFull[int(b/2)][int(k/2)]
-	#Now that we have 3 points from the FOVs of the radars, calculate the lat,lon pair
-	#to center the map on. We can simply do this by converting from Spherical coords
-	#to Cartesian, taking the mean of each coordinate and then converting back
-	#to get lat_0 and lon_0
-	lonC,latC = (numpy.array(lonC)+360.)%360.0,numpy.array(latC)
 
-	xs=numpy.cos(numpy.deg2rad(latC))*numpy.cos(numpy.deg2rad(lonC))
-	ys=numpy.cos(numpy.deg2rad(latC))*numpy.sin(numpy.deg2rad(lonC))
-	zs=numpy.sin(numpy.deg2rad(latC))
-	xc=numpy.mean(xs)
-	yc=numpy.mean(ys)
-	zc=numpy.mean(zs)
-	#lon_0=numpy.rad2deg(numpy.arctan2(yc,xc))
-	#lat_0=numpy.rad2deg(numpy.arctan2(zc,numpy.sqrt(xc*xc+yc*yc)))
-
-	
-	#Now do some stuff in map projection coords to get necessary width and height of map
-	#and also figure out the corners of the map
-	
-	lonFull,latFull = (numpy.array(lonFull)+360.)%360.0,numpy.array(latFull)
 	tmpmap = utils.mapObj(coords='geo',projection='stere', width=10.0**3, 
 												height=10.0**3, lat_0=lat_0, lon_0=lon_0)
-	x,y = tmpmap(lonFull,latFull)
+
 	xsite,ysite = tmpmap(site.geolon,site.geolat)
 	fex,fey = tmpmap(fEdgeLon,fEdgeLat)
 	lex,ley = tmpmap(lEdgeLon,lEdgeLat)
@@ -643,26 +596,7 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	else:
 		width = bwidth
 	height = numpy.sqrt((cex-xsite)**2+(cey-ysite)**2)
-	minx = x.min()*1.05     #since we don't want the map to cut off labels or
-	miny = y.min()*1.05     #FOVs of the radars we should alter the extrema a bit.
-	maxx = x.max()*1.05
-	maxy = y.max()*1.05
-	#width = (maxx-minx)
-	#height = (maxy-miny)
-	if numpy.abs(minx-xsite)< numpy.abs(maxx-xsite):
-		if numpy.abs(miny-ysite) <numpy.abs(maxy-ysite):
-			llcrnrlon,llcrnrlat = tmpmap(minx,miny,inverse=True)
-			urcrnrlon,urcrnrlat = tmpmap(maxx,maxy,inverse=True)
-		else:
-			llcrnrlon,llcrnrlat = tmpmap(minx,maxy,inverse=True)
-			urcrnrlon,urcrnrlat = tmpmap(maxx,miny,inverse=True)
-	else:
-		if numpy.abs(miny-ysite) <numpy.abs(maxy-ysite):
-			llcrnrlon,llcrnrlat = tmpmap(minx,miny,inverse=True)
-			urcrnrlon,urcrnrlat = tmpmap(maxx,maxy,inverse=True)
-		else:
-			llcrnrlon,llcrnrlat = tmpmap(minx,maxy,inverse=True)
-			urcrnrlon,urcrnrlat = tmpmap(maxx,miny,inverse=True)
+
 	dist = width/50.
 	cTime = datetime.datetime.utcnow()
 
@@ -677,7 +611,7 @@ def geoLoc(site,maxgates, rsep, maxbeams):
 	myMap.fillcontinents(color=continentColor, lake_color=waterColor)
 	myFig.savefig('/var/www/html/java/mcmb/map')
 	'''
-	return llcrnrlon,llcrnrlat,urcrnrlon,urcrnrlat,lon_0,lat_0,fovs,dist,width,height
+	return lon_0,lat_0,fovs,dist,width,height
 
 
 ################################################################################

@@ -39,12 +39,13 @@ import logging
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from utils.timeUtils import *
 from pydarn.sdio import *
+import matplotlib.pyplot as plt
 
 def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
               scales=[],channel='a',coords='gate',colors='lasse',yrng=-1,gsct=False,lowGray=False, \
               filtered=False, tFreqBands=[], myFile=None,figure=None,xtick_size=9,
               ytick_size=9,xticks=None,axvlines=None,plotTerminator=False,
-              tfreq = None, noise=None, rTime = None,title = None):
+              tfreq = None, noise=None, rTime = None,radN = None):
   """create an rti plot for a secified radar and time period
 
   **Args**:
@@ -222,7 +223,7 @@ def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
       X, Y = numpy.meshgrid(x[:tcnt], y)
       cmap,norm,bounds = genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
       pcoll = ax.pcolormesh(data[:][:].T, lw=0.01,edgecolors='w',alpha=1,lod=True,cmap=cmap,norm=norm)
-      cb = rtiFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1,drawedges=True)
+      cb = rtiFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1)
       l = []
       #define the colorbar labels
       for i in range(0,len(bounds)):
@@ -251,12 +252,10 @@ def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
       if(params[p] == 'phi0'): cb.set_label('Phi0 [rad]',size=10)
     xmin = 0.1
     xmax = 0.96
-    rtiFig.text(xmin,.95,title,ha='left',weight=550)
-    rtiFig.text((xmin+xmax)/2.,.95,str(rTime),weight=550,ha='center')
     if noise is None:
     	noise =0
-    rtiFig.text(xmax,.95,'Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise)
-		  ,weight=550,ha='right')
+    rtiFig.text(xmin,.95,radN,ha='left',weight=400)
+    rtiFig.text((xmin+xmax)/2.,.95,str(rTime)+'; Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise),weight=100,ha='center')
     return rtiFig
 
 def drawAxes(myFig,beam,rad,cpid,bmnum,nrang,frang,rsep,bottom,yrng=-1,\

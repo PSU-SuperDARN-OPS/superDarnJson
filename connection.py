@@ -68,15 +68,13 @@ class geoThread(Thread):
 				if myBeam.prm.nrang != self.maxgates:
 					print 'Changing Gates'
 					self.maxgates = myBeam.prm.nrang
-					self.parent.llcrnrlon,self.parent.llcrnrlat,\
-					self.parent.urcrnrlon,self.parent.urcrnrlat,\
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
 					self.parent.dist, self.parent.height,self.parent.width = plotUtils.geoLoc(self.parent.site,\
 						self.maxgates,self.parent.site.rsep,\
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
-						width= self.width*1.2,height = self.height*1.2,\
+						width= self.parent.width*1.2,height = self.parent.height*1.2,\
 						grid =True,lineColor='0.75')
 				if myBeam.bmnum >= len(myScan):
 					bmnum = len(myScan)
@@ -90,15 +88,13 @@ class geoThread(Thread):
 						bmnum += 1
 					myScan.append(myBeam)
 					self.parent.maxbm = myBeam.bmnum+1
-					self.parent.llcrnrlon,self.parent.llcrnrlat,\
-					self.parent.urcrnrlon,self.parent.urcrnrlat,\
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
 					self.parent.dist, self.parent.height,self.parent.width = plotUtils.geoLoc(self.parent.site,\
 						self.maxgates,self.parent.site.rsep,\
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
-						width= self.width*1.2,height = self.height*1.2,\
+						width= self.parent.width*1.2,height = self.parent.height*1.2,\
 						anchor = 'N',grid =True,lineColor='0.75')
 				else:
 					myScan.pop(myBeam.bmnum)
@@ -120,12 +116,8 @@ class geoThread(Thread):
 					tfreq = myBeam.prm.tfreq,
 					noise = myBeam.prm.noisesearch,
 					rTime=myBeam.time,
-					title = self.parent.names[0],
+					radN = self.parent.names[0],
 					dist = self.parent.dist,
-					llcrnrlon = self.parent.llcrnrlon,
-					llcrnrlat = self.parent.llcrnrlat,
-					urcrnrlon = self.parent.urcrnrlon,
-					urcrnrlat = self.parent.urcrnrlat,
 					lon_0 = self.parent.lon_0,
 					lat_0 = self.parent.lat_0,
 					merGrid = self.parent.geo['merGrid'],
@@ -154,7 +146,7 @@ class geoThread(Thread):
 						tfreq = myBeam.prm.tfreq,
 						noise = myBeam.prm.noisesearch,
 						rTime=myBeam.time,
-						title = self.parent.names[0])
+						radN = self.parent.names[0])
 					self.parent.fan['figure'][i].savefig("%sfan_%s" % (self.parent.filepath[0],self.parent.fan['param'][i]))
 				except:
 					logging.error('fan plot missing info')

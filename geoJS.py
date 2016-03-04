@@ -28,7 +28,7 @@
     * :func:`pydarn.plotting.fan.overlayFan`
 """
     
-import numpy,math,datetime,time,gme
+import numpy,math,datetime,time,gme,matplotlib
 from matplotlib.collections import PolyCollection,LineCollection
 from utils.timeUtils import *
 from utils.plotUtils import genCmap
@@ -37,6 +37,7 @@ from pydarn.plotting import overlayFov
 from pydarn.radar import radFov
 from pydarn.sdio import beamData
 from pydarn.sdio.radDataRead import *
+import matplotlib.pyplot as plt
 
 
 def plotFan(myScan,rad,params='velocity',filtered=False ,\
@@ -46,7 +47,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
         poesparam='ted',poesMin=-3.,poesMax=0.5, maxbeams = 16, maxgates = 75, \
         poesLabel=r"Total Log Energy Flux [ergs cm$^{-2}$ s$^{-1}$]",overlayBnd=False, \
 		tFreqBands=[],myFigs=None,bmnum = None,site = None,drawEdge = False,
-		tfreq = None, noise = None,rTime = None, title = None,dist = None,
+		tfreq = None, noise = None,rTime = None, radN = None,dist = None,
 		llcrnrlon=None,llcrnrlat=None,urcrnrlon=None,urcrnrlat=None,lon_0=None,lat_0=None,
 		merGrid = True,merColor = '0.75',continentBorder = '0.75',
 		waterColor = '#cce5ff',continentColor = 'w',backgColor='w',gridColor='k',\
@@ -132,16 +133,12 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		fbase = datetime.datetime.utcnow().strftime("%Y%m%d")
 			
 		cmap,norm,bounds = genCmap(param,scale,colors=colors,lowGray=lowGray)
-		
+
+
 		myBands = []
 		for i in range(len(rad)):
 			myBands.append(tbands[i])
 		
-		if myMap is None:
-			myMap = mapObj(coords='geo', projection='stere', lat_0=lat_0, lon_0=lon_0,
-												 llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat, urcrnrlon=urcrnrlon,
-												 urcrnrlat=urcrnrlat,grid =merGrid,
-												 lineColor=merColor)
 		myMap.drawcoastlines(linewidth=0.5,color=continentBorder)
 		myMap.drawmapboundary(fill_color=waterColor)
 		myMap.fillcontinents(color=continentColor, lake_color=waterColor)
@@ -163,10 +160,10 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 			lineColor=gridColor, dateTime=cTime, fovObj=fovs[0]) 
 		intensities, pcoll = overlayFan(myScan,myMap,myFig,param,coords,\
 			gsct=gsct,site=site,fov=fovs[0], fill=fill,velscl=velscl,\
-			dist=dist,cmap=cmap,norm=norm,)
+			dist=dist,cmap=cmap,norm=norm,scale = scale)
 		#if no data has been found pcoll will not have been set, and the following code will object                                   
 		if pcoll: 
-			cbar = myFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1,drawedges=drawEdge)
+			cbar = myFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1,drawedges=drawEdge,norm=norm)
 			l = []
 			#define the colorbar labels
 			for i in range(0,len(bounds)):
@@ -175,9 +172,6 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 					if(bounds[i] == 0): ln = 3
 					elif(bounds[i] < 0): ln = 5
 					l.append(str(bounds[i])[:ln])
-					continue
-				if((i == 0 and param == 'velocity') or i == len(bounds)-1):
-					l.append(' ')
 					continue
 				l.append(str(int(bounds[i])))
 			cbar.ax.set_yticklabels(l)
@@ -201,7 +195,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 			if(pcols != None):
 				cols.append(pcols)
 				pTicks = numpy.linspace(poesMin,poesMax,8)
-				cbar = myFig.colorbar(pcols,ticks=pTicks,orientation='vertical',shrink=0.65,fraction=.1)
+				cbar = myFig.colorbar(pcols,ticks=pTicks,orientation='vertical',shrink=0.65,fraction=.1,norm=matplotlib.colors.Normalize(vmin=scale[0], vmax=scale[1]))
 				cbar.ax.set_yticklabels(pTicks)
 				cbar.set_label(poesLabel,size=14)
 				cbar.ax.tick_params(axis='y',direction='out')
@@ -214,20 +208,20 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		xmin = 0.1
 		xmax = 0.86
 		
-		myFig.text(xmin,.95,title,ha='left',weight=550)
-		myFig.text((xmin+xmax)/2.,.95,str(rTime),weight=550,ha='center')
+		#myFig.text(xmin,.95,title,ha='left',weight=550)
+		#myFig.text((xmin+xmax)/2.,.95,str(rTime),weight=550,ha='center')
 		if noise is None:
 			noise =0
-		myFig.text(xmax,.95,'Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise)
-			  ,weight=550,ha='right')
+		plt.title(radN+'; Time: '+str(rTime),loc='center')
+		plt.xlabel('Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise))
 		#self.parent.geo['figure'][i].savefig("%sgeo_%s" % (self.parent.filepath[0],self.parent.geo['param'][i]))
 		#handle the outputs
-		myFig.savefig("%sgeo_%s" % (filepath,param))
+		myFig.savefig("%sgeo_%s" % (filepath,param),bbox_inches='tight')
     return myFigs
 
 def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
                                 fov=None,gs_flg=[],fill=True,velscl=1000.,dist=1000.,
-                                cmap=None,norm=None,alpha=1):
+                                cmap=None,norm=None,alpha=1,scale = None):
 
     """A function of overlay radar scan data on a map
 
@@ -321,11 +315,11 @@ def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
             else:
                 inx = numpy.where(numpy.array(gs_flg)==0)
                 x = PolyCollection(numpy.array(verts)[numpy.where(numpy.array(gs_flg)==1)],
-                    facecolors='.3',linewidths=0,zorder=5,alpha=alpha)
+                    facecolors='.3',linewidths=0,zorder=5,alpha=alpha,norm=norm)
                 myFig.gca().add_collection(x, autolim=True)
 
             pcoll = PolyCollection(numpy.array(verts)[inx],
-                edgecolors='face',linewidths=0,closed=False,zorder=4,
+                edgecolors='none',linewidths=0,closed=False,zorder=4,
                 alpha=alpha,cmap=cmap,norm=norm)
             #set color array to intensities
             pcoll.set_array(numpy.array(intensities)[inx])
