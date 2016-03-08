@@ -74,7 +74,7 @@ class geoThread(Thread):
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
-						width= self.parent.width*1.2,height = self.parent.height*1.2,\
+						width= self.parent.width*1.3,height = self.parent.height*1.3,\
 						grid =True,lineColor='0.75')
 				if myBeam.bmnum >= len(myScan):
 					bmnum = len(myScan)
@@ -94,7 +94,7 @@ class geoThread(Thread):
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
-						width= self.parent.width*1.2,height = self.parent.height*1.2,\
+						width= self.parent.width*1.3,height = self.parent.height*1.3,\
 						anchor = 'N',grid =True,lineColor='0.75')
 				else:
 					myScan.pop(myBeam.bmnum)
@@ -392,6 +392,11 @@ class EchoFactory(ClientFactory):
         logging.debug("Connection lost - goodbye!")
         logging.debug('Closed Connection')
         reactor.stop()
+        try:
+            self.parent.gt.join()
+            self.parent.tt.join()
+        except:
+            logging.debug("Threads haven't started")
         for pr in self.parent.fan['param']:
             silentRemove(self,"fan_%s.png" % (pr))
             silentRemove(self,"geo_%s.png" % (pr))
