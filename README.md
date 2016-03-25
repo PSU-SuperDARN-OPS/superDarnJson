@@ -46,7 +46,7 @@ python2 basic_gui.py hosts=localhost ports=6025 maxbeam=16 nrangs=75 names="McMu
 
 **Argument Definition For basic\_gui.py**
 
-'''
+```
 hosts - Name of host to connect to
 
 ports - port number to connect to
@@ -64,7 +64,7 @@ rad - Radars 3 letter abriviation
 channel - Radars channel (optional)
 
 filepath - path to where you would like the saved images to be stored
-'''
+```
 
 The at minimum the passed in arguments that should be updated are ports, names, rad, channel(optional), and filepath. 
 
