@@ -5,17 +5,18 @@ To run ensure davitpy is installed on your machine as well as twisted and at lea
 **Location of the needed packages:**
 
 [davitpy] (https://github.com/vtsuperdarn/davitpy)
+
 [twisted] (http://twistedmatrix.com/trac/)
 
 
 **Davitpy Files that need to be modified**
 Files that need to be copied to the davitpy library located in the python section of your machine
 
---plotUtils.py --davitpy/pydarn/plotting/
+-plotUtils.py --davitpy/pydarn/plotting/
 
---radDataTypes --davitpy/pydarn/sdio/
+-radDataTypes --davitpy/pydarn/sdio/
 
---mapOverlay   --davitpy/utils/
+-mapOverlay   --davitpy/utils/
 
 The file radarPos.py needs to be copied into davitpy in the same folder as plotUtils.py
 
@@ -44,6 +45,7 @@ python2 basic_gui.py hosts=localhost ports=6025 maxbeam=16 nrangs=75 names="McMu
 
 
 **Argument Definition For basic\_gui.py**
+
 '''
 hosts - Name of host to connect to
 
