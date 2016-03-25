@@ -311,10 +311,7 @@ def genCmap(param, scale, colors='lasse', lowGray=False):
     bounds = numpy.round(numpy.linspace(scale[0],scale[1],11))
     bounds = numpy.append(bounds,50000.)
     norm = matplotlib.colors.Normalize(vmin=scale[0], vmax=scale[1])
-    
 
-  cmap.set_bad('w',1.0)
-  cmap.set_over('w',1.0)
   cmap.set_under('.6',1.0)
 
   return cmap,norm,bounds
