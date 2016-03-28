@@ -69,9 +69,9 @@ def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
     * **[axvlines]** (list): datetime.datetime objects indicating the location vertical lines marking the plot
     * **[plotTerminator]** (boolean): Overlay the day/night terminator.
     * **[tfreq]** (int): the beams freqency for the title 
-    * **noise** (float): the beams noise for the title
-    * **rTime** (datetime): the beam time for the title
-    * **radN** (str): Name of radar site for the title
+    * **[noise]** (float): the beams noise for the title
+    * **[rTime]** (datetime): the beam time for the title
+    * **[radN]** (str): Name of radar site for the title
   **Returns**:
     * Plotted figure
 

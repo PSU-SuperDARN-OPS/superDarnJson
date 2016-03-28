@@ -47,7 +47,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
         poesparam='ted',poesMin=-3.,poesMax=0.5, maxbeams = 16, maxgates = 75, \
         poesLabel=r"Total Log Energy Flux [ergs cm$^{-2}$ s$^{-1}$]",overlayBnd=False, \
 		tFreqBands=[],myFigs=None,bmnum = None,drawEdge = False,continentBorder = '0.75',\
-		tfreq = None, noise = None,rTime = None, radN = None,merGrid = True,\
+		tfreq = None, noise = None,nave = 0, inttime = 0,rTime = None, radN = None,merGrid = True,\
 		merColor = '0.75',waterColor = '#cce5ff',continentColor = 'w',\
 		backgColor='w',gridColor='k',filepath = None,\
 		site = None,dist = None,myMap = None):
@@ -74,30 +74,32 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
         * **[poesparam]** (str): the poes parameter to plot.  default = 'ted'.  available params can be found in :class:`gme.sat.poes.poesRec`
         * **[poesMin]** (float): the min value for the poes data color scale.  default = -3.
         * **[poesMax]**  (float): the max value for the poes data color scale.  default = 0.5
-        * **maxbeams** (int): maximum number of beams for a radar
-        * **maxgates** (int): maximum number of gates for a radar
+        * **[maxbeams]** (int): maximum number of beams for a radar
+        * **[maxgates]** (int): maximum number of gates for a radar
         * **[poesLabel]** (str): the label for the poes color bar.  default = r"Total Log Energy Flux [ergs cm$^{-2}$ s$^{-1}$]"
         * **[overlayBnd]** (boolean): a flag indicating whether to plot an auroral boundary determined from fitting poes data.  default = False
         * **[tFreqBands]** (list): upper and lower bounds of frequency in kHz to be used.  Must be unset (or set to []) or have a pair for each radar, and for any band set to [] the default will be used.  default = [[8000,20000]], [[8000,20000],[8000,20000]], etc.
         * **[myFigs]** (figure): Array of figures, one for each parameter
-        * **bmnum** (int): number of beam that you are currently at 
-        * **drawEdge** (boolean): a flag indicating if the edges of contents are drawn
-        * **continentBorder** (int): Color of the content border
-        * **tfreq** (int): The beam numbers param tfreq for title information
-        * **noise** (float): The beam numbers param noisesearch for title information
-        * **rTime** (datetime): The beam number time for title information
-        * **radN** (str): Name of the radar like 'Adak East' for title information
-        * **merGrid** (boolean): Indicates if the map has a grid
-        * **merColor** (int): Color of the grid if it is drawn
-        * **waterColor** (str): Color string of the ocean water
-        * **continentColor** (char): Color char of the content
-        * **backgColor** (char): Color char of the background color
-        * **gridColor** (char): Color char of the background grid
-        * **filepath** (str): file path from current location to picture location
-        * ****** Pre -Caluculated information to reduce runtime
-        * **site** (site): site information of the radar
-        * **dist** (geoLoc): location information the width divided by 50
-        * **myMap** (myMap): Map object with latitude and longitude information
+        * **[bmnum]** (int): number of beam that you are currently at 
+        * **[drawEdge]** (boolean): a flag indicating if the edges of contents are drawn
+        * **[continentBorder]** (int): Color of the content border
+        * **[tfreq]** (int): The beam numbers param tfreq for title information
+        * **[noise]** (float): The beam numbers param noisesearch for title information
+        * **[nave]** (int): The number of averages for the displayed beam
+        * **[inttime]** (int): The integeration time in seconds for the displayed beam
+        * **[rTime]** (datetime): The beam number time for title information
+        * **[radN]** (str): Name of the radar like 'Adak East' for title information
+        * **[merGrid]** (boolean): Indicates if the map has a grid
+        * **[merColor]** (int): Color of the grid if it is drawn
+        * **[waterColor]** (str): Color string of the ocean water
+        * **[continentColor]** (char): Color char of the content
+        * **[backgColor]** (char): Color char of the background color
+        * **[gridColor]** (char): Color char of the background grid
+        * **[filepath]** (str): file path from current location to picture location
+        * ****** Pre -Caluculated information to reduce runtime ****** *
+        * **[site]** (site): site information of the radar
+        * **[dist]** (geoLoc): location information the width divided by 50
+        * **[myMap]** (myMap): Map object with latitude and longitude information
         
     **Returns**:
         * Array of matplotlib figures
@@ -237,7 +239,8 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		if noise is None:
 			noise =0
 		plt.title(radN+'; Time: '+str(rTime),loc='center')
-		plt.xlabel('Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise))
+		plt.xlabel('Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise)+\
+			'; Avg: '+str(nave)+'; Int. Time: '+str(inttime))
 		myFig.savefig("%sgeo_%s" % (filepath,param),bbox_inches='tight')
     return myFigs
 

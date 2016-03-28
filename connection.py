@@ -126,6 +126,8 @@ class geoThread(Thread):
 					site = self.parent.site,
 					tfreq = myBeam.prm.tfreq,
 					noise = myBeam.prm.noisesearch,
+					nave = myBeam.prm.nave,
+					inttime = myBeam.prm.inttsc,
 					rTime=myBeam.time,
 					radN = self.parent.names[0],
 					dist = self.parent.dist,
