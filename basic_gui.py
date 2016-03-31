@@ -151,7 +151,7 @@ def loadData(self):
 	timeThen = timeNow - datetime.timedelta(days=1)
 	currentTime = timeThen
 	
-	while currentTime.day <= timeNow.day:
+	while currentTime.day <= timeNow.day and currentTime.month <= timeNow.month and currentTime.year <= timeNow.year:
 		dFilenm = 'data/'+`currentTime.month`+`currentTime.day`+`currentTime.year`+'_'+self.rad+self.channels[0]
 		try:
 			with open(dFilenm,'r+') as f:
