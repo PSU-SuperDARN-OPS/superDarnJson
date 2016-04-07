@@ -12,13 +12,13 @@ To run ensure davitpy is installed on your machine as well as twisted and at lea
 **Davitpy Files that need to be modified**
 Files that need to be copied to the davitpy library located in the python section of your machine
 
--plotUtils.py --davitpy/pydarn/plotting/
+-plotUtils.py --davitpy/pydarn/utils/
 
 -radDataTypes --davitpy/pydarn/sdio/
 
 -mapOverlay   --davitpy/utils/
 
-The file radarPos.py needs to be copied into davitpy in the same folder as plotUtils.py
+The file radarPos.py needs to be copied into davitpy in davitpy/pydarn/plotting/
 
 
 **First:**
