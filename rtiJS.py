@@ -38,10 +38,10 @@ import matplotlib.lines as lines
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from matplotlib.dates import date2num, SecondLocator,num2date,DateFormatter
 from matplotlib.cm import *
-from utils.timeUtils import *
-from pydarn.sdio import *
-from pydarn.radar import radFov, radUtils
-from utils import plotUtils,drawCB
+from davitpy.utils.timeUtils import *
+from davitpy.pydarn.sdio import *
+from davitpy.pydarn.radar import radFov, radUtils
+from davitpy.utils import plotUtils
 from radarPos import RadarPos
 
 
@@ -257,9 +257,11 @@ def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
      
       cmap,norm,bounds = plotUtils.genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
       cmap.set_bad('w',1.0)
-      pcoll = ax.pcolormesh(X, Y, tmpdata[:tcnt][:].T, lw=0.01,edgecolors='None',alpha=1,lod=True,cmap=cmap,norm=norm)
-      cb = drawCB(rtiFig,pcoll,cmap,norm,map=0,pos=[pos[0]+pos[2]+.02, pos[1], 0.02, pos[3]])
-      
+      pcoll = ax.pcolormesh(X, Y, tmpdata[:tcnt][:].T, lw=0.01,edgecolors='None',alpha=1,cmap=cmap,norm=norm)
+      try:
+      	  cb = plotUtils.drawCB(rtiFig,pcoll,cmap,norm,map=0,pos=[pos[0]+pos[2]+.02, pos[1], 0.02, pos[3]])
+      except:
+      	  cb = rtiFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1)
       l = []
       #define the colorbar labels
       for i in range(0,len(bounds)):

@@ -1,10 +1,10 @@
 ﻿from connection import serverCon
-from pydarn.sdio import beamData, scanData
+from davitpy.pydarn.sdio.radDataTypes import beamData, scanData
 import matplotlib.pyplot as plot
 from radarPos import RadarPos
 import sys, datetime, pytz
-from utils import plotUtils,mapObj
-from pydarn.radar import radFov
+from davitpy.utils.plotUtils import genCmap,mapObj,geoLoc
+from davitpy.pydarn.radar import radFov
 sys.path.append('~/davitpy')
 
 
@@ -26,6 +26,7 @@ class parseStart:
 		
 		self.i = 0
 		self.rad = self.rad[0]
+		
 		self.maxbm = self.maxbeam[0]
 		self.fan = None
 		self.geo = None
@@ -121,7 +122,7 @@ datasets later updated by incoming data
 def createData(self):
 	self.myScan = scanData()
 	self.myBeamList = scanData()
-	for i in range(0, int(self.maxbeam[0])):
+	for i in range(0, int(self.maxbm)):
 		myBeam = beamData()
 		today = datetime.datetime.utcnow()
 		today = today.replace(tzinfo=pytz.utc)
@@ -133,13 +134,12 @@ def createData(self):
 		self.myScan.append(myBeam)
 	self.site = RadarPos(code = self.rad)
 	self.site.tval = datetime.datetime.utcnow()
-	self.lon_0,self.lat_0, self.fovs,self.dist,self.height,self.width = \
-	plotUtils.geoLoc(self.site,
-		int(self.nrangs[0]),self.site.rsep,
-		int(self.maxbeam[0]))
-	self.myMap = mapObj(coords='geo', projection='stere', lat_0=self.lat_0, lon_0=self.lon_0,
-												 width= self.width*1.2,height = self.height*1.2,grid =True,anchor = 'N',
-												 lineColor='0.75')
+	self.lon_0,self.lat_0, self.fovs,self.dist,self.width,self.height = \
+	geoLoc(self.site, int(self.nrangs[0]),self.site.rsep, int(self.maxbm))
+	self.myMap = mapObj(coords='geo',draw=True, projection='stere', lat_0=self.lat_0,\
+							lon_0=self.lon_0, width= self.width*1.2,
+							height = self.height*1.2,grid =True,anchor = 'N',
+							datetime=self.site.tval)
 
 '''
 loadData(self) used for time plot data only 
@@ -151,7 +151,6 @@ def loadData(self):
 	timeThen = timeNow - datetime.timedelta(days=1)
 	currentTime = timeThen
 	while currentTime <= timeNow:
-		print 'In Loop:', currentTime, timeNow
 		dFilenm = 'data/'+`currentTime.month`+`currentTime.day`+`currentTime.year`+'_'+self.rad+self.channels[0]
 		try:
 			with open(dFilenm,'r+') as f:

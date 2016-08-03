@@ -1,4 +1,4 @@
-﻿from pydarn.sdio import beamData, scanData
+﻿from davitpy.pydarn.sdio.radDataTypes import beamData, scanData
 import logging
 from twisted.internet import reactor, protocol
 from twisted.internet.protocol import ClientFactory
@@ -11,10 +11,10 @@ from fgpJS import plotFgpJson
 import matplotlib.pyplot as plot
 import sys,datetime,pytz
 sys.path.append('~/davitpy')
-from utils import plotUtils,mapObj
+from davitpy.utils.plotUtils import genCmap,mapObj,geoLoc
 import time
-from pydarn.proc.music import getDataSet
-
+from davitpy.pydarn.proc.music import getDataSet
+from davitpy import utils
 '''
 A thread that plots and saves the geographic fan plot
 and beam vs gates plot
@@ -79,13 +79,12 @@ class geoThread(Thread):
 					logging.info('Changing Gates')
 					self.maxgates = myBeam.prm.nrang
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
-					self.parent.dist, self.parent.height,self.parent.width = plotUtils.geoLoc(self.parent.site,\
-						self.maxgates,self.parent.site.rsep,\
-						int(self.parent.maxbm))
+					self.parent.dist, self.parent.height,self.parent.width = geoLoc(self.parent.site,\
+						self.maxgates,self.parent.site.rsep,int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
 						width= self.parent.width*1.3,height = self.parent.height*1.3,\
-						grid =True,lineColor='0.75')
+						grid =True)
 				#updates myScan size if the beam number is greater then the current myScan size
 				if myBeam.bmnum >= len(myScan):
 					bmnum = len(myScan)
@@ -95,56 +94,54 @@ class geoThread(Thread):
 						tmp_myBeam.bmnum = bmnum
 						tmp_myBeam.time = timeNow.replace(tzinfo=None)
 						myScan.append(tmp_myBeam)
-						print tmp_myBeam
 						bmnum += 1
 					myScan.append(myBeam)
 					self.parent.maxbm = myBeam.bmnum+1
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
-					self.parent.dist, self.parent.height,self.parent.width = plotUtils.geoLoc(self.parent.site,\
+					self.parent.dist, self.parent.height,self.parent.width = geoLoc(self.parent.site,\
 						self.maxgates,self.parent.site.rsep,\
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
 						width= self.parent.width*1.3,height = self.parent.height*1.3,\
-						anchor = 'N',grid =True,lineColor='0.75')
+						anchor = 'N',grid =True,draw=True)
 				else:
 					myScan.pop(myBeam.bmnum)
 					myScan.insert(myBeam.bmnum,myBeam)
-			
 			#Plot and save geographic figure for each parameter
-			try:
-				self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
-					fovs = self.parent.fovs,
-					params=self.parent.geo['param'],
-					gsct=self.parent.geo['gsct'], 
-					maxbeams = int(self.parent.maxbm),
-					maxgates=self.maxgates,	
-					scales=self.parent.geo['sc'],
-					drawEdge = self.parent.geo['drawEdge'], 
-					myFigs = self.parent.geo['figure'],
-					bmnum = myBeam.bmnum,
-					site = self.parent.site,
-					tfreq = myBeam.prm.tfreq,
-					noise = myBeam.prm.noisesearch,
-					nave = myBeam.prm.nave,
-					inttime = myBeam.prm.inttsc,
-					rTime=myBeam.time,
-					radN = self.parent.names[0],
-					dist = self.parent.dist,
-					merGrid = self.parent.geo['merGrid'],
-					merColor = self.parent.geo['merColor'],
-					continentBorder = self.parent.geo['continentBorder'],
-					waterColor = self.parent.geo['waterColor'],
-					continentColor = self.parent.geo['continentColor'],
-					backgColor = self.parent.geo['backgColor'],
-					gridColor = self.parent.geo['gridColor'],
-					filepath = self.parent.filepath[0],
-					myMap = self.parent.myMap)
-			except:
-				logging.error('geographic plot missing info')
-				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
+			#try:
+			self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
+				fovs = self.parent.fovs,
+				params=self.parent.geo['param'],
+				gsct=self.parent.geo['gsct'], 
+				maxbeams = int(self.parent.maxbm),
+				maxgates=self.maxgates,	
+				scales=self.parent.geo['sc'],
+				drawEdge = self.parent.geo['drawEdge'], 
+				myFigs = self.parent.geo['figure'],
+				bmnum = myBeam.bmnum,
+				site = self.parent.site,
+				tfreq = myBeam.prm.tfreq,
+				noise = myBeam.prm.noisesearch,
+				nave = myBeam.prm.nave,
+				inttime = myBeam.prm.inttsc,
+				rTime=myBeam.time,
+				radN = self.parent.names[0],
+				dist = self.parent.dist,
+				merGrid = self.parent.geo['merGrid'],
+				merColor = self.parent.geo['merColor'],
+				continentBorder = self.parent.geo['continentBorder'],
+				waterColor = self.parent.geo['waterColor'],
+				continentColor = self.parent.geo['continentColor'],
+				backgColor = self.parent.geo['backgColor'],
+				gridColor = self.parent.geo['gridColor'],
+				filepath = self.parent.filepath[0],
+				myMap = self.parent.myMap)
+			#except:
+				#logging.error('geographic plot missing info')
+				#logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
 				
-				
+			
 			#Plot and save beam number vs gates figure for each parameter
 			for i in range(len(self.parent.fan['figure'])):
 				time.sleep(1)
@@ -168,6 +165,7 @@ class geoThread(Thread):
 				except:
 					logging.error('fan plot missing info')
 					logging.error('Fan Figure: %s'%(sys.exc_info()[0]))
+					
 	
 	'''
 	Stops geoThread
@@ -231,22 +229,22 @@ class timeThread(Thread):
 				f.close()
 				myBeamList.append(myBeam)
 			if len(myBeamList)>2:
-				try:
-					self.parent.time['figure'].clf()
-					self.parent.time['figure']=plotRti(myBeamList,
-							self.parent.rad,
-							params=self.parent.time['param'],
-							scales=self.parent.time['sc'],
-							gsct=self.parent.time['gsct'],
-							bmnum = int(self.parent.beams[0]),
-							figure = self.parent.time['figure'],
-							rTime = timeNow,
-							title = self.parent.names[0],
-							myFov = self.parent.fovs)
-					self.parent.time['figure'].savefig("%stime" % (self.parent.filepath[0]))
-				except:
-					logging.error('time plot missing info')
-					logging.error('Time Figure: %s' %(sys.exc_info()[0]))
+				#try:
+				self.parent.time['figure'].clf()
+				self.parent.time['figure']=plotRti(myBeamList,
+						self.parent.rad,
+						params=self.parent.time['param'],
+						scales=self.parent.time['sc'],
+						gsct=self.parent.time['gsct'],
+						bmnum = int(self.parent.beams[0]),
+						figure = self.parent.time['figure'],
+						rTime = timeNow,
+						title = self.parent.names[0],
+						myFov = self.parent.fovs)
+				self.parent.time['figure'].savefig("%stime" % (self.parent.filepath[0]))
+				#except:
+					#logging.error('time plot missing info')
+					#logging.error('Time Figure: %s' %(sys.exc_info()[0]))
 			else:
 				lowData(self,'time.png')
 	def join(self, timeout=None):

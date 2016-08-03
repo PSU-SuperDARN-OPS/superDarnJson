@@ -34,11 +34,11 @@
 
 
 import numpy
-from utils.plotUtils import genCmap
+from davitpy.utils.plotUtils import genCmap
 import logging
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from utils.timeUtils import *
-from pydarn.sdio import *
+from davitpy.utils.timeUtils import *
+from davitpy.pydarn.sdio import *
 import matplotlib.pyplot as plt
 
 def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
@@ -232,7 +232,7 @@ def plotFgpJson(myScan,rad,bmnum=7,params=['velocity','power','width'], \
       X, Y = numpy.meshgrid(x[:tcnt], y)
       cmap,norm,bounds = genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
       cmap.set_bad('w',1.0)
-      pcoll = ax.pcolormesh(tmpdata[:][:].T, lw=0.01,edgecolors='w',alpha=1,lod=True,cmap=cmap,norm=norm)
+      pcoll = ax.pcolormesh(tmpdata[:][:].T, lw=0.01,edgecolors='w',alpha=1,cmap=cmap,norm=norm)
       cb = rtiFig.colorbar(pcoll,orientation='vertical',shrink=.65,fraction=.1)
       l = []
       #define the colorbar labels
