@@ -39,7 +39,7 @@ from davitpy.pydarn.radar import radFov
 from davitpy.pydarn.sdio import beamData
 from davitpy.pydarn.sdio.radDataRead import *
 import matplotlib.pyplot as plt
-from data_gather import latRange
+
 
 
 def plotFan(myScan,rad,params='velocity',filtered=False ,\

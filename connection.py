@@ -15,6 +15,7 @@ from davitpy.utils.plotUtils import genCmap,mapObj,geoLoc
 import time
 from davitpy.pydarn.proc.music import getDataSet
 from davitpy import utils
+import logging.config
 '''
 A thread that plots and saves the geographic fan plot
 and beam vs gates plot
@@ -109,37 +110,37 @@ class geoThread(Thread):
 					myScan.pop(myBeam.bmnum)
 					myScan.insert(myBeam.bmnum,myBeam)
 			#Plot and save geographic figure for each parameter
-			#try:
-			self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
-				fovs = self.parent.fovs,
-				params=self.parent.geo['param'],
-				gsct=self.parent.geo['gsct'], 
-				maxbeams = int(self.parent.maxbm),
-				maxgates=self.maxgates,	
-				scales=self.parent.geo['sc'],
-				drawEdge = self.parent.geo['drawEdge'], 
-				myFigs = self.parent.geo['figure'],
-				bmnum = myBeam.bmnum,
-				site = self.parent.site,
-				tfreq = myBeam.prm.tfreq,
-				noise = myBeam.prm.noisesearch,
-				nave = myBeam.prm.nave,
-				inttime = myBeam.prm.inttsc,
-				rTime=myBeam.time,
-				radN = self.parent.names[0],
-				dist = self.parent.dist,
-				merGrid = self.parent.geo['merGrid'],
-				merColor = self.parent.geo['merColor'],
-				continentBorder = self.parent.geo['continentBorder'],
-				waterColor = self.parent.geo['waterColor'],
-				continentColor = self.parent.geo['continentColor'],
-				backgColor = self.parent.geo['backgColor'],
-				gridColor = self.parent.geo['gridColor'],
-				filepath = self.parent.filepath[0],
-				myMap = self.parent.myMap)
-			#except:
-				#logging.error('geographic plot missing info')
-				#logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
+			try:
+				self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
+					fovs = self.parent.fovs,
+					params=self.parent.geo['param'],
+					gsct=self.parent.geo['gsct'], 
+					maxbeams = int(self.parent.maxbm),
+					maxgates=self.maxgates,	
+					scales=self.parent.geo['sc'],
+					drawEdge = self.parent.geo['drawEdge'], 
+					myFigs = self.parent.geo['figure'],
+					bmnum = myBeam.bmnum,
+					site = self.parent.site,
+					tfreq = myBeam.prm.tfreq,
+					noise = myBeam.prm.noisesearch,
+					nave = myBeam.prm.nave,
+					inttime = myBeam.prm.inttsc,
+					rTime=myBeam.time,
+					radN = self.parent.names[0],
+					dist = self.parent.dist,
+					merGrid = self.parent.geo['merGrid'],
+					merColor = self.parent.geo['merColor'],
+					continentBorder = self.parent.geo['continentBorder'],
+					waterColor = self.parent.geo['waterColor'],
+					continentColor = self.parent.geo['continentColor'],
+					backgColor = self.parent.geo['backgColor'],
+					gridColor = self.parent.geo['gridColor'],
+					filepath = self.parent.filepath[0],
+					myMap = self.parent.myMap)
+			except:
+				logging.error('geographic plot missing info')
+				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
 				
 			
 			#Plot and save beam number vs gates figure for each parameter
@@ -229,22 +230,22 @@ class timeThread(Thread):
 				f.close()
 				myBeamList.append(myBeam)
 			if len(myBeamList)>2:
-				#try:
-				self.parent.time['figure'].clf()
-				self.parent.time['figure']=plotRti(myBeamList,
-						self.parent.rad,
-						params=self.parent.time['param'],
-						scales=self.parent.time['sc'],
-						gsct=self.parent.time['gsct'],
-						bmnum = int(self.parent.beams[0]),
-						figure = self.parent.time['figure'],
-						rTime = timeNow,
-						title = self.parent.names[0],
-						myFov = self.parent.fovs)
-				self.parent.time['figure'].savefig("%stime" % (self.parent.filepath[0]))
-				#except:
-					#logging.error('time plot missing info')
-					#logging.error('Time Figure: %s' %(sys.exc_info()[0]))
+				try:
+					self.parent.time['figure'].clf()
+					self.parent.time['figure']=plotRti(myBeamList,
+							self.parent.rad,
+							params=self.parent.time['param'],
+							scales=self.parent.time['sc'],
+							gsct=self.parent.time['gsct'],
+							bmnum = int(self.parent.beams[0]),
+							figure = self.parent.time['figure'],
+							rTime = timeNow,
+							title = self.parent.names[0],
+							myFov = self.parent.fovs)
+					self.parent.time['figure'].savefig("%stime" % (self.parent.filepath[0]))
+				except:
+					logging.error('time plot missing info')
+					logging.error('Time Figure: %s' %(sys.exc_info()[0]))
 			else:
 				lowData(self,'time.png')
 	def join(self, timeout=None):
@@ -440,9 +441,19 @@ Initializes queues and threads and sets up to wait for a server to connect
 '''
 def serverCon(self):
 	t_date = datetime.date.today()
-	logging.basicConfig(filename="errlog/err_%s%s_%s"\
+	logger = logging.getLogger()
+	old_log = logger.handlers[0]
+	logger.removeHandler(old_log)
+	#root_logger.disabled = True
+	#new_logger = logging.getLogger()
+	#new_logger.disabled = False
+	rl = logging.basicConfig(filename="errlog/err_%s%s_%s"\
 		% (self.rad,self.channels[0],t_date.strftime('%Y%m%d')), level=logging.DEBUG, \
 		format='%(asctime)s %(message)s')
+	lh = logging.StreamHandler(rl)
+	logger.addHandler(lh)
+	logger.debug('Starting everything')
+	print 'Writting to file'
 	f = EchoFactory(self)
 	f.parent = self
 	f.gque = Queue()
@@ -453,6 +464,7 @@ def serverCon(self):
 	f.gt = geoThread(self,f.gque,f.tque)
 	f.gt.start()
 	f.tt.start()
+	f.logger = logger
 	reactor.connectTCP(self.hosts[0], int(self.ports[0]), f)
 	reactor.run(installSignalHandlers=0)
 
