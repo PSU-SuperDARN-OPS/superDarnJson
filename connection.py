@@ -81,15 +81,15 @@ class geoThread(Thread):
 					self.maxgates = myBeam.prm.nrang
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
 					self.parent.dist, self.parent.height,self.parent.width = geoLoc(self.parent.site,\
-						self.maxgates,self.parent.site.rsep,int(self.parent.maxbm))
+						self.maxgates,myBeam.prm.rsep,int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
 						width= self.parent.width*1.3,height = self.parent.height*1.3,\
 						grid =True)
 				#updates myScan size if the beam number is greater then the current myScan size
-				if myBeam.bmnum >= len(myScan):
+				elif myBeam.bmnum >= len(myScan):
 					bmnum = len(myScan)
-					while bmnum > len(myScan):
+					while myBeam.bmnum > len(myScan):
 						time.sleep(0.1)
 						tmp_myBeam = beamData()
 						tmp_myBeam.bmnum = bmnum
@@ -97,10 +97,11 @@ class geoThread(Thread):
 						myScan.append(tmp_myBeam)
 						bmnum += 1
 					myScan.append(myBeam)
+					logging.info('Changing Beam number %s'%(myBeam))
 					self.parent.maxbm = myBeam.bmnum+1
 					self.parent.lon_0,self.parent.lat_0, self.parent.fovs,\
 					self.parent.dist, self.parent.height,self.parent.width = geoLoc(self.parent.site,\
-						self.maxgates,self.parent.site.rsep,\
+						self.maxgates,myBeam.prm.rsep,\
 						int(self.parent.maxbm))
 					self.parent.myMap = mapObj(coords='geo', projection='stere',\
 						lat_0=self.parent.lat_0, lon_0=self.parent.lon_0,\
