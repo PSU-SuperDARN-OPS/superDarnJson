@@ -64,8 +64,7 @@ filepath - path to where you would like the saved images to be stored
 Run startbasic\_ksr.sh as a bash file or set it up as a cronjob that runs once a minute. The cronjob will check the errorlog and the current log of tasks to see if the real-time program is still running if it isn't will it restarts both groups of functions.
 
 
-**Other Needed Tasks**
-
+**Other Needed Tasks Information**
 - Create an errlog file folder in the same location this file folder will contain daily log information. With file names containing date the file was created as well as radar name.
 - Create a file folder with the name data. This file will contain files that are used to plot the time plot graphs if connection is lost.
 
