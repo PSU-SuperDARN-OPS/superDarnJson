@@ -19,7 +19,7 @@ else
     pkill -9 -f pydmap_read_ksr.py
     cd /var/www/radar/html/java/images/gui/
     python2.7 pydmap_read_ksr.py &
-    python2.7 basic_gui.py hosts=localhost ports=6047 maxbeam=16 nrangs=75 names="King Salmon" beams=8 rad=ksr filepath="ksr/"
+    python2.7 basic_gui.py hosts=localhost ports=6047 maxbeam=16 nrangs=75 names="King Salmon(NICT)" beams=8 rad=ksr filepath="ksr/"
     
 fi
 

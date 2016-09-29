@@ -975,7 +975,13 @@ class radBaseData():
         """
         import datetime as dt
         for attr, value in self.__dict__.iteritems():
-        	if(attr == 'channel'):
+        	if attr == 'time':
+        		#convert from epoch to datetime
+        		if aDict.has_key(attr) and isinstance(aDict[attr], float):
+        			setattr(self, attr,
+        				dt.datetime.utcfromtimestamp(aDict[attr]))
+        		continue
+        	elif(attr == 'channel'):
         		if aDict.has_key('channel'):
         			self.channel = aDict['channel']
         		continue

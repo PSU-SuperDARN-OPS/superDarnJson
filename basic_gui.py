@@ -32,7 +32,7 @@ class parseStart:
 		self.geo = None
 		self.status = None
 		
-		#fan data
+		#Initializes fan data
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
@@ -44,7 +44,7 @@ class parseStart:
 		self.fan = self.data
 	
 	
-		#time data
+		#Initializes time data
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
@@ -54,7 +54,7 @@ class parseStart:
 		self.time = self.data
 		
 	
-		#geo data
+		#Initializes geo data
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
@@ -74,14 +74,14 @@ class parseStart:
 		serverCon(self)
 		
 '''
-Start the whole program
+Starts the whole program
 '''
 def run():
 
 	parseStart()
 
 '''
-parses input arguments	
+Parses input arguments	
 '''
 def parseArgs(self):
 	
@@ -114,9 +114,19 @@ def parseArgs(self):
 			self.rad = argL[indEq:].split(',')
 		elif 'filepath' in argL:
 			self.filepath = argL[indEq:].split(',')
+	if len(sys.argv)==1:
+		self.hosts=['localhost']
+		self.ports=['6047']
+		self.maxbeam = ['16']
+		self.nrangs=['75']
+		self.names=['King Salmon(NICT)']
+		self.beams=['8']
+		self.rad=['ksr']
+		self.filepath=['/var/www/html/java/ksr/']
+		
 
 '''
-creates empty datasets used by all plots
+Creates empty datasets used by all plots
 datasets later updated by incoming data
 '''
 def createData(self):

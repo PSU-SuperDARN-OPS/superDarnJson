@@ -40,9 +40,10 @@ from matplotlib.dates import date2num, SecondLocator,num2date,DateFormatter
 from matplotlib.cm import *
 from davitpy.utils.timeUtils import *
 from davitpy.pydarn.sdio import *
-from davitpy.pydarn.radar import radFov, radUtils
+from davitpy.pydarn.radar import radFov, radUtils,network
 from davitpy.utils import plotUtils
-from radarPos import RadarPos
+
+
 
 
 def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
@@ -181,6 +182,7 @@ def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
       if('phi0' in params): phi0[i].append(myBeam.fit.phi0)
       gsflg[i].append(myBeam.fit.gflg)
 
+
   for fplot in range(len(tbands)):
 
     #get/create a figure
@@ -208,7 +210,7 @@ def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
       
       #draw the axis
       ax = drawAxes(rtiFig,times[fplot],rad,cpid[fplot],bmnum,nrang[fplot],frang[fplot],rsep[fplot],ids,p==len(params)-1,yrng=yrng,coords=coords,\
-                    pos=pos,xtick_size=xtick_size,ytick_size=ytick_size,xticks=xticks,axvlines=axvlines, myFov = myFov)
+                    pos=pos,xtick_size=xtick_size,ytick_size=ytick_size,xticks=xticks,axvlines=axvlines, myFov=myFov)
   
       
       if(pArr == []): continue
@@ -242,13 +244,14 @@ def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
             elif gsct and gsflg[fplot][i][j] == 1:
               data[tcnt][int(slist[fplot][i][j])] = -100000.
       tmpdata = numpy.ma.masked_where(data <= -150000, data)
+
       if (coords != 'gate' and coords != 'rng'):
-      	if myFov is None:
-			site    = RadarPos(ids)
-			myFov   = radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
+        if myFov is None:
+          site    = RadarPos(ids)
+          myFov   = radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
         myLat   = myFov.latCenter[bmnum]
         myLon   = myFov.lonCenter[bmnum]
-          
+
       if(coords == 'gate'): y = numpy.linspace(0,rmax,rmax+1)
       elif(coords == 'rng'): y = numpy.linspace(frang[fplot][0],rmax*rsep[fplot][0],rmax+1)
       else: y = myFov.latFull[bmnum]
@@ -271,7 +274,7 @@ def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
       #set colorbar ticklabel size
       for t in cb.ax.get_yticklabels():
         t.set_fontsize(9)
-      
+
       #set colorbar label
       if(params[p] == 'velocity'): cb.set_label('Velocity [m/s]',size=10)
       if(params[p] == 'grid'): cb.set_label('Velocity [m/s]',size=10)
@@ -280,7 +283,6 @@ def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
       if(params[p] == 'elevation'): cb.set_label('Elev [deg]',size=10)
       if(params[p] == 'phi0'): cb.set_label('Phi0 [rad]',size=10)
     #end of plotting for loop
-    
     return rtiFig
   
 def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
@@ -337,10 +339,9 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
         oldCpid = cpid[i]
         if(coords == 'geo' or coords == 'mag'):
           if myFov is None:
-			  site = RadarPos(ids)
-			  myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
-          if(myFov.latFull[bmnum].max() > ymax): ymax = myFov.latFull[bmnum].max()
-          if(myFov.latFull[bmnum].min() < ymin): ymin = myFov.latFull[bmnum].min()
+            site = RadarPos(ids)
+            myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
+
         else:
           ymin = 0
           if(nrang[i]*rsep[i]+frang[i] > ymax): ymax = nrang[i]*rsep[i]+frang[i]
@@ -349,7 +350,6 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
       ymin,ymax = 0,max(nrang)
   else:
     ymin,ymax = yrng[0],yrng[1]
-
   xmin,xmax = date2num(times[0]),date2num(times[len(times)-1])
   xrng = (xmax-xmin)
   inter = int(round(xrng/6.*86400.))
