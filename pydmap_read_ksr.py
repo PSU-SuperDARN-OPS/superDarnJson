@@ -1,4 +1,4 @@
-﻿# script for reading in dmap strings over a socket into a dictionary
+# script for reading in dmap strings over a socket into a dictionary
 # 7/1/2015
 # jon klein, jtklein@alaska.edu
 
@@ -132,9 +132,9 @@ def createjson(scalars, vectors):
 
 def main():
     HOST = 'superdarn.gi.alaska.edu'
-    PORT = 6032
+    PORT = 6030
     timeout = False
-    PORT_JSON_SERVE = 6042
+    PORT_JSON_SERVE = 6047
     
     s = None
     s_json = None
@@ -151,7 +151,7 @@ def main():
 			while True:
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				s.connect((HOST, PORT))
-				s.settimeout(30.0)
+				s.settimeout(90.0)
 				while not timeout:
 					scalars, vectors, timeout = readPacket(s)
 					json_str = createjson(scalars, vectors)
