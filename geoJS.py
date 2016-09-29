@@ -40,8 +40,7 @@ from davitpy.pydarn.radar import radFov
 from davitpy.pydarn.sdio import beamData
 from davitpy.pydarn.sdio.radDataRead import *
 import matplotlib.pyplot as plt
-from radarPos import RadarPos
-from data_gather import latRange
+
 
 
 
@@ -167,32 +166,11 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 			
 		cmap,norm,bounds = genCmap(param,scale,colors=colors,lowGray=lowGray)
 
-		#myScan=[]
-		#i=0
-		'''
-		print sTime
-		while i < maxbeams:
-			myFile = radDataOpen(sTime, rad[0], sTime + dt.timedelta(hours=1),
-                        fileType='fitacf',filtered=filtered, channel=channel,bmnum=i,src='local')
-			myScan.append(radDataReadRec(myFile))
-			i+=1
-			myFile.close()
 
-		print myScan
-		'''
 		myBands = []
 		for i in range(len(rad)):
 			myBands.append(tbands[i])
-		'''
-		site = RadarPos(code=rad[0])
-		site.tval = sTime
-		lon_0,lat_0, fovs,dist, height,width = geoLoc(site,\
-			maxgates,site.rsep,int(maxbeams))
-		myMap = mapObj(coords='geo', projection='stere',\
-						lat_0=lat_0, lon_0=lon_0,\
-						width= width*1.3,height = height*1.3,\
-						grid =True)
-		'''
+
 		try:
 			myMap.drawcoastlines(linewidth=0.5,color=continentBorder)
 			myMap.drawmapboundary(fill_color=waterColor)
@@ -200,15 +178,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 			myMap.drawcountries()
 		except:
 			myMap.drawcountries()
-		'''
-		xpt,ypt = myMap(166.73,-77.88)
-		xpt1,ypt1 = myMap(118.29,-89.995)
-		(l1,l2,long1,long2) = latRange(-89.995,118.29,0.689,dist = 519.61,el = 30,az = 90)
-		dxpt,dypt = myMap(long2,l2)
-		myMap.plot(xpt,ypt,'rD')
-		myMap.plot(xpt1,ypt1,'bD')
-		dif = abs(xpt-dxpt)
-		'''
+
 		cols = []
 		ft = 'None'
 		pcoll = None
@@ -225,8 +195,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 		else:
 			gsct = True
 
-		#overlayRadar(myMap,codes=rad,\
-			#markerColor=gridColor, dateTime=cTime) 
+
 		overlayFov(myMap, codes=rad, dateTime=cTime,\
                                        fovObj=fovs[0])
 		intensities, pcoll = overlayFan(myScan,myMap,myFig,param,coords,\
@@ -281,9 +250,7 @@ def plotFan(myScan,rad,params='velocity',filtered=False ,\
 
 		if noise is None:
 			noise =0
-		#fov = patches.Circle((xpt,ypt), radius=dif,facecolor='none',edgecolor='red')
 
-		#myFig.gca().add_patch(fov)
 		plt.title(radN+'; Time: '+str(rTime),loc='center')
 		plt.xlabel('Beam: '+str(bmnum)+'; Freq: '+str(tfreq)+'; Noise: '+"{0:.2f}".format(noise)+\
 			'; Avg: '+str(nave)+'; Int. Time: '+str(inttime))
@@ -325,9 +292,7 @@ def overlayFan(myData,myMap,myFig,param,coords='geo',gsct=0,site=None,\
     
     if(site == None):
         site = RadarPos(myData[0].stid)
-    #if(fov == None):
-    #fov = radFov.fov(site=site,rsep=myData[0].prm.rsep,\
-        #ngates=myData[0].prm.nrang+1,nbeams= maxbeams,coords=coords) 
+
     
     if(isinstance(myData,beamData)): myData = [myData]
     gs_flg,lines = [],[]

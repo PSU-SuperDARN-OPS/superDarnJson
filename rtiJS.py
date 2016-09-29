@@ -42,11 +42,11 @@ from davitpy.utils.timeUtils import *
 from davitpy.pydarn.sdio import *
 from davitpy.pydarn.radar import radFov, radUtils,network
 from davitpy.utils import plotUtils
-from radarPos import RadarPos
-from data_gather import latRange
 
 
-def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
+
+
+def plotRti(myBeamList,rad,bmnum=7, params=['velocity','power','width'],\
 	scales=[], channel='a',coords='gate',colors='lasse',yrng=-1,\
 	gsct=False,lowGray=False, filtered=False,tFreqBands=[],\
 	figure=None,xtick_size=9,ytick_size=9,myFov = None,\
@@ -132,11 +132,11 @@ def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
       #make sure that starting frequncy is less than the ending frequency for each band
       assert(band[0] < band[1]),"Starting frequency must be less than ending frequency!"
       tbands.append(band)
-  myFile = radDataOpen(sTime, rad, eTime, channel=channel, bmnum=bmnum)
 
-  #if not myBeamList:
-    #logging.debug('error, no data available for the requested time/radar/filetype combination')
-    #return None
+
+  if not myBeamList:
+    logging.debug('error, no data available for the requested time/radar/filetype combination')
+    return None
 
   #initialize empty lists
   vel,pow,wid,elev,phi0,times,freq,cpid,nave,nsky,nsch,slist,mode,rsep,nrang,frang,gsflg = \
@@ -161,37 +161,34 @@ def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
     gsflg.append([])
   timeThen = datetime.datetime.utcnow() - datetime.timedelta(days=1)
   #read the parameters of interest
-  myBeam= radDataReadRec(myFile)
-  while(myBeam != None):
-  	  if(myBeam.bmnum == bmnum and (sTime <= myBeam.time)):
-  	  	  for i in range(0,len(tbands)):
-  	  	  	  if myBeam.prm.tfreq >= tbands[i][0] and myBeam.prm.tfreq <= tbands[i][1]:
-				  ids = myBeam.stid
-				  times[i].append(myBeam.time)
-				  cpid[i].append(myBeam.cp)
-				  nave[i].append(myBeam.prm.nave)
-				  nsky[i].append(myBeam.prm.noisesky)
-				  rsep[i].append(myBeam.prm.rsep)
-				  nrang[i].append(myBeam.prm.nrang)
-				  frang[i].append(myBeam.prm.frang)
-				  nsch[i].append(myBeam.prm.noisesearch)
-				  freq[i].append(myBeam.prm.tfreq/1e3)
-				  slist[i].append(myBeam.fit.slist)
-				  mode[i].append(myBeam.prm.ifmode)
-				  if('velocity' in params): vel[i].append(myBeam.fit.v)
-				  if('power' in params): pow[i].append(myBeam.fit.p_l)
-				  if('width' in params): wid[i].append(myBeam.fit.w_l)
-				  if('elevation' in params): elev[i].append(myBeam.fit.elv)
-				  if('phi0' in params): phi0[i].append(myBeam.fit.phi0)
-				  gsflg[i].append(myBeam.fit.gflg)
-  	  myBeam = radDataReadRec(myFile)
+  for myBeam in myBeamList:
+    if myBeam.time > timeThen:
+      ids = myBeam.stid
+      times[i].append(myBeam.time)
+      cpid[i].append(myBeam.cp)
+      nave[i].append(myBeam.prm.nave)
+      nsky[i].append(myBeam.prm.noisesky)
+      rsep[i].append(myBeam.prm.rsep)
+      nrang[i].append(myBeam.prm.nrang)
+      frang[i].append(myBeam.prm.frang)
+      nsch[i].append(myBeam.prm.noisesearch)
+      freq[i].append(myBeam.prm.tfreq/1e3)
+      slist[i].append(myBeam.fit.slist)
+      mode[i].append(myBeam.prm.ifmode)
+      if('velocity' in params): vel[i].append(myBeam.fit.v)
+      if('power' in params): pow[i].append(myBeam.fit.p_l)
+      if('width' in params): wid[i].append(myBeam.fit.w_l)
+      if('elevation' in params): elev[i].append(myBeam.fit.elv)
+      if('phi0' in params): phi0[i].append(myBeam.fit.phi0)
+      gsflg[i].append(myBeam.fit.gflg)
+
 
   for fplot in range(len(tbands)):
 
     #get/create a figure
     rtiFig = figure
     #give the plot a title
-    rtiTitle(rtiFig,sTime,title,rad,bmnum)
+    rtiTitle(rtiFig,rTime,title,rad,bmnum)
     #plot the noise bar
     plotNoise(rtiFig,times[fplot],nsky[fplot],nsch[fplot])
     #plot the frequency bar
@@ -213,7 +210,7 @@ def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
       
       #draw the axis
       ax = drawAxes(rtiFig,times[fplot],rad,cpid[fplot],bmnum,nrang[fplot],frang[fplot],rsep[fplot],ids,p==len(params)-1,yrng=yrng,coords=coords,\
-                    pos=pos,xtick_size=xtick_size,ytick_size=ytick_size,xticks=xticks,axvlines=axvlines)
+                    pos=pos,xtick_size=xtick_size,ytick_size=ytick_size,xticks=xticks,axvlines=axvlines, myFov=myFov)
   
       
       if(pArr == []): continue
@@ -249,18 +246,12 @@ def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
       tmpdata = numpy.ma.masked_where(data <= -150000, data)
 
       if (coords != 'gate' and coords != 'rng'):
-      	  if myFov is None:
-      	  	  site = RadarPos(code=rad)
-      	  	  site.tval = sTime
-      	  	  myFov = radFov.fov(site=site, ngates=int(nrang[0][0]),
-                                                    nbeams=16,
-                                                    rsep=rsep[0][0],
-                                                    coords=coords)
-      	  myLat   = myFov.latCenter[bmnum]
-      	  myLon = myFov.lonCenter[bmnum]
-      #(lat1,lat2,long1,long2)=latRange(-77.84,166.69,0.689,dist=519.61,el=30,az=0)
-      (lat1,lat2,long1,long2)=latRange(65.14,-147.45,0.689,dist=519.61,el=30,az=0)
-      print lat1,lat2
+        if myFov is None:
+          site    = RadarPos(ids)
+          myFov   = radFov.fov(site=site,ngates=rmax,nbeams=site.maxbeam,rsep=rsep[fplot][0],coords=coords)
+        myLat   = myFov.latCenter[bmnum]
+        myLon   = myFov.lonCenter[bmnum]
+
       if(coords == 'gate'): y = numpy.linspace(0,rmax,rmax+1)
       elif(coords == 'rng'): y = numpy.linspace(frang[fplot][0],rmax*rsep[fplot][0],rmax+1)
       else: y = myFov.latFull[bmnum]
@@ -268,6 +259,7 @@ def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
       X, Y = numpy.meshgrid(x[:tcnt], y)
      
       cmap,norm,bounds = plotUtils.genCmap(params[p],scales[p],colors=colors,lowGray=lowGray)
+      cmap.set_bad('w',1.0)
       pcoll = ax.pcolormesh(X, Y, tmpdata[:tcnt][:].T, lw=0.01,edgecolors='None',alpha=1,cmap=cmap,norm=norm)
       try:
       	  cb = plotUtils.drawCB(rtiFig,pcoll,cmap,norm,map=0,pos=[pos[0]+pos[2]+.02, pos[1], 0.02, pos[3]])
@@ -282,8 +274,7 @@ def plotRti(sTime,eTime,rad,bmnum=7, params=['velocity','power','width'],\
       #set colorbar ticklabel size
       for t in cb.ax.get_yticklabels():
         t.set_fontsize(9)
-      ax.hlines(lat1,np.min(X),np.max(X),colors='r',linestyles='dashed')
-      ax.hlines(lat2,np.min(X),np.max(X),colors='r',linestyles='dashed')
+
       #set colorbar label
       if(params[p] == 'velocity'): cb.set_label('Velocity [m/s]',size=10)
       if(params[p] == 'grid'): cb.set_label('Velocity [m/s]',size=10)
@@ -347,12 +338,10 @@ def drawAxes(myFig,times,rad,cpid,bmnum,nrang,frang,rsep,bottom,ids,yrng=-1,\
         if(cpid[i] == oldCpid): continue
         oldCpid = cpid[i]
         if(coords == 'geo' or coords == 'mag'):
-          #if myFov is None:
-          site = network().getRadarByCode(rad) \
-                        .getSiteByDate(times[i])
-          myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=16,rsep=rsep[i],coords=coords)
-          if(myFov.latFull[bmnum].max() > ymax): ymax = myFov.latFull[bmnum].max()
-          if(myFov.latFull[bmnum].min() < ymin): ymin = myFov.latFull[bmnum].min()
+          if myFov is None:
+            site = RadarPos(ids)
+            myFov = radFov.fov(site=site, ngates=nrang[i],nbeams=site.maxbeam,rsep=rsep[i],coords=coords)
+
         else:
           ymin = 0
           if(nrang[i]*rsep[i]+frang[i] > ymax): ymax = nrang[i]*rsep[i]+frang[i]

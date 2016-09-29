@@ -111,37 +111,37 @@ class geoThread(Thread):
 					myScan.pop(myBeam.bmnum)
 					myScan.insert(myBeam.bmnum,myBeam)
 			#Plot and save geographic figure for each parameter
-			#try:
-			self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
-				fovs = self.parent.fovs,
-				params=self.parent.geo['param'],
-				gsct=self.parent.geo['gsct'], 
-				maxbeams = int(self.parent.maxbm),
-				maxgates=self.maxgates,	
-				scales=self.parent.geo['sc'],
-				drawEdge = self.parent.geo['drawEdge'], 
-				myFigs = self.parent.geo['figure'],
-				bmnum = myBeam.bmnum,
-				site = self.parent.site,
-				tfreq = myBeam.prm.tfreq,
-				noise = myBeam.prm.noisesearch,
-				nave = myBeam.prm.nave,
-				inttime = myBeam.prm.inttsc,
-				rTime=myBeam.time,
-				radN = self.parent.names[0],
-				dist = self.parent.dist,
-				merGrid = self.parent.geo['merGrid'],
-				merColor = self.parent.geo['merColor'],
-				continentBorder = self.parent.geo['continentBorder'],
-				waterColor = self.parent.geo['waterColor'],
-				continentColor = self.parent.geo['continentColor'],
-				backgColor = self.parent.geo['backgColor'],
-				gridColor = self.parent.geo['gridColor'],
-				filepath = self.parent.filepath[0],
-				myMap = self.parent.myMap)
-			#except:
-				#logging.error('geographic plot missing info')
-				#logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
+			try:
+				self.parent.geo['figure'] = plotFan(myScan,[self.parent.rad],
+					fovs = self.parent.fovs,
+					params=self.parent.geo['param'],
+					gsct=self.parent.geo['gsct'], 
+					maxbeams = int(self.parent.maxbm),
+					maxgates=self.maxgates,	
+					scales=self.parent.geo['sc'],
+					drawEdge = self.parent.geo['drawEdge'], 
+					myFigs = self.parent.geo['figure'],
+					bmnum = myBeam.bmnum,
+					site = self.parent.site,
+					tfreq = myBeam.prm.tfreq,
+					noise = myBeam.prm.noisesearch,
+					nave = myBeam.prm.nave,
+					inttime = myBeam.prm.inttsc,
+					rTime=myBeam.time,
+					radN = self.parent.names[0],
+					dist = self.parent.dist,
+					merGrid = self.parent.geo['merGrid'],
+					merColor = self.parent.geo['merColor'],
+					continentBorder = self.parent.geo['continentBorder'],
+					waterColor = self.parent.geo['waterColor'],
+					continentColor = self.parent.geo['continentColor'],
+					backgColor = self.parent.geo['backgColor'],
+					gridColor = self.parent.geo['gridColor'],
+					filepath = self.parent.filepath[0],
+					myMap = self.parent.myMap)
+			except:
+				logging.error('geographic plot missing info')
+				logging.error('Geo Figure: %s'%(sys.exc_info()[0]))
 				
 			
 			#Plot and save beam number vs gates figure for each parameter

@@ -2,7 +2,7 @@
 from davitpy.pydarn.sdio.radDataTypes import beamData, scanData
 import matplotlib.pyplot as plot
 from radarPos import RadarPos
-import sys, datetime, pytz, Tkinter
+import sys, datetime, pytz
 from davitpy.utils.plotUtils import genCmap,mapObj,geoLoc
 from davitpy.pydarn.radar import radFov
 sys.path.append('~/davitpy')
@@ -32,7 +32,7 @@ class parseStart:
 		self.geo = None
 		self.status = None
 		
-		#fan data
+		#Initializes fan data
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
@@ -44,7 +44,7 @@ class parseStart:
 		self.fan = self.data
 	
 	
-		#time data
+		#Initializes time data
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
@@ -54,7 +54,7 @@ class parseStart:
 		self.time = self.data
 		
 	
-		#geo data
+		#Initializes geo data
 		self.data = {}
 		self.data['param'] = ['velocity','power','width']
 		self.data['sc'] = [[-1000,1000],[0,30],[0,500]]
@@ -74,14 +74,14 @@ class parseStart:
 		serverCon(self)
 		
 '''
-Start the whole program
+Starts the whole program
 '''
 def run():
 
 	parseStart()
 
 '''
-parses input arguments	
+Parses input arguments	
 '''
 def parseArgs(self):
 	
@@ -126,7 +126,7 @@ def parseArgs(self):
 		
 
 '''
-creates empty datasets used by all plots
+Creates empty datasets used by all plots
 datasets later updated by incoming data
 '''
 def createData(self):
@@ -146,7 +146,6 @@ def createData(self):
 	self.site.tval = datetime.datetime.utcnow()
 	self.lon_0,self.lat_0, self.fovs,self.dist,self.width,self.height = \
 	geoLoc(self.site, int(self.nrangs[0]),self.site.rsep, int(self.maxbm))
-	print self.lon_0,self.lat_0
 	self.myMap = mapObj(coords='geo',draw=True, projection='stere', lat_0=self.lat_0,\
 							lon_0=self.lon_0, width= self.width*1.2,
 							height = self.height*1.2,grid =True,anchor = 'N',
